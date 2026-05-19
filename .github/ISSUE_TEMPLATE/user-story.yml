@@ -51,18 +51,6 @@ body:
     validations:
       required: true
 
-  - type: textarea
-    id: functional-cases
-    attributes:
-      label: Cas fonctionnels
-      description: Scénarios concrets (nominal, alternatif, erreur) que l'US doit couvrir.
-      value: |
-        - Cas nominal :
-        - Cas alternatif :
-        - Cas d'erreur :
-    validations:
-      required: true
-
   - type: dropdown
     id: priority
     attributes:
@@ -72,7 +60,7 @@ body:
         - Medium
         - Low
     validations:
-      required: true
+      required: false
 
   - type: dropdown
     id: estimate
@@ -91,7 +79,7 @@ body:
         - "55 (à redécouper)"
         - "89 (à redécouper)"
     validations:
-      required: true
+      required: false
 
   - type: dropdown
     id: sprint
@@ -117,10 +105,7 @@ body:
       options:
         - label: Compréhensible par toute l'équipe
         - label: Estimable
-        - label: Testable
-        - label: Critères d'acceptation définis
-        - label: Suffisamment petite pour 1 sprint
-        - label: Dépendances identifiées
+        - label: Conditions de validations
         - label: Validée par le PO (Nathan)
 
   - type: checkboxes
@@ -131,8 +116,7 @@ body:
         - label: Développement terminé
         - label: Code versionné sur Git
         - label: Fonctionnalité testée
-        - label: Critères d'acceptation validés
+        - label: Conditions de validations validés
         - label: Aucune erreur bloquante connue
-        - label: Documentation à jour si nécessaire
-        - label: Fonctionnalité démontrable
         - label: Validée par le PO (Nathan)
+        - label: Validée par le SRUM (Jihad)
