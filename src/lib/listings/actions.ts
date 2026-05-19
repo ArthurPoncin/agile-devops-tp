@@ -1,9 +1,10 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingInsert } from "@/lib/supabase/database.types";
-import { redirect } from "next/navigation";
-import { listingCreateSchema } from "./schema";
+import { deleteListingSchema, listingCreateSchema } from "./schema";
 
 const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
 const MAX_PHOTO_COUNT = 10;
@@ -88,4 +89,43 @@ function extensionOf(filename: string): string {
   const dot = filename.lastIndexOf(".");
   if (dot <= 0 || dot === filename.length - 1) return "";
   return filename.slice(dot).toLowerCase();
+}
+
+export type DeleteListingResult = { ok: true } | { error: string };
+
+export async function deleteListing(formData: FormData): Promise<DeleteListingResult> {
+  const parsed = deleteListingSchema.safeParse({
+    id: formData.get("id"),
+  });
+
+  if (!parsed.success) {
+    return { error: "Suppression impossible. Annonce introuvable." };
+  }
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Suppression impossible. Vous devez être connecté." };
+  }
+
+  const { data, error } = await supabase
+    .from("listings")
+    .delete()
+    .eq("id", parsed.data.id)
+    .select();
+
+  if (error) {
+    return { error: "Suppression impossible. Réessayez plus tard." };
+  }
+
+  if (!data || data.length === 0) {
+    return { error: "Suppression impossible. Annonce introuvable." };
+  }
+
+  revalidatePath("/mes-annonces");
+  return { ok: true };
 }

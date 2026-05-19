@@ -10,3 +10,9 @@ export const listingCreateSchema = z.object({
 });
 
 export type ListingCreateInput = z.infer<typeof listingCreateSchema>;
+
+export const deleteListingSchema = z.object({
+  id: z.string().uuid("Identifiant d'annonce invalide."),
+});
+
+export type DeleteListingInput = z.infer<typeof deleteListingSchema>;

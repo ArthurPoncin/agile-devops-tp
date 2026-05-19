@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const LISTING_ID = "11111111-1111-4111-8111-111111111111";
+
 const getUser = vi.fn();
 const insert = vi.fn();
+const select = vi.fn();
+const eq = vi.fn(() => ({ select }));
+const del = vi.fn(() => ({ eq }));
 const from = vi.fn();
 const upload = vi.fn();
 const remove = vi.fn();
@@ -9,6 +14,7 @@ const storageFrom = vi.fn();
 const redirect = vi.fn((path: string) => {
   throw new Error(`NEXT_REDIRECT:${path}`);
 });
+const revalidatePath = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
@@ -22,20 +28,32 @@ vi.mock("next/navigation", () => ({
   redirect: (path: string) => redirect(path),
 }));
 
+vi.mock("next/cache", () => ({
+  revalidatePath: (...args: unknown[]) => revalidatePath(...args),
+}));
+
 beforeEach(() => {
   getUser.mockReset();
   insert.mockReset();
+  select.mockReset();
+  eq.mockReset();
+  del.mockReset();
   from.mockReset();
   upload.mockReset();
   remove.mockReset();
   storageFrom.mockReset();
   redirect.mockClear();
+  revalidatePath.mockReset();
 
-  from.mockImplementation(() => ({ insert }));
+  eq.mockImplementation(() => ({ select }));
+  del.mockImplementation(() => ({ eq }));
+  from.mockImplementation(() => ({ insert, delete: del }));
   storageFrom.mockImplementation(() => ({ upload, remove }));
+  getUser.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
   insert.mockResolvedValue({ error: null });
   upload.mockResolvedValue({ data: { path: "stub" }, error: null });
   remove.mockResolvedValue({ data: [], error: null });
+  select.mockResolvedValue({ data: [{ id: LISTING_ID }], error: null });
 });
 
 afterEach(() => {
@@ -285,5 +303,73 @@ describe("createListing()", () => {
     expect(remove).toHaveBeenCalledTimes(1);
     const removedPaths = remove.mock.calls[0][0] as string[];
     expect(removedPaths).toHaveLength(2);
+  });
+});
+
+describe("deleteListing()", () => {
+  it("deletes the listing matching the submitted id and revalidates the listings page", async () => {
+    const { deleteListing } = await import("./actions");
+
+    const formData = new FormData();
+    formData.set("id", LISTING_ID);
+
+    await deleteListing(formData);
+
+    expect(from).toHaveBeenCalledWith("listings");
+    expect(del).toHaveBeenCalled();
+    expect(eq).toHaveBeenCalledWith("id", LISTING_ID);
+    expect(revalidatePath).toHaveBeenCalledWith("/mes-annonces");
+  });
+
+  it("rejects a malformed id without calling Supabase", async () => {
+    const { deleteListing } = await import("./actions");
+
+    const formData = new FormData();
+    formData.set("id", "not-a-uuid");
+
+    const result = await deleteListing(formData);
+
+    expect(from).not.toHaveBeenCalled();
+    expect(result).toEqual({ error: "Suppression impossible. Annonce introuvable." });
+  });
+
+  it("rejects when no user is authenticated", async () => {
+    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    const { deleteListing } = await import("./actions");
+
+    const formData = new FormData();
+    formData.set("id", LISTING_ID);
+
+    const result = await deleteListing(formData);
+
+    expect(del).not.toHaveBeenCalled();
+    expect(result).toEqual({ error: "Suppression impossible. Vous devez être connecté." });
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("returns an error message when Supabase rejects the delete", async () => {
+    select.mockResolvedValue({ data: null, error: { message: "RLS denied" } });
+    const { deleteListing } = await import("./actions");
+
+    const formData = new FormData();
+    formData.set("id", LISTING_ID);
+
+    const result = await deleteListing(formData);
+
+    expect(result).toEqual({ error: "Suppression impossible. Réessayez plus tard." });
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("returns 'introuvable' when no row is deleted (RLS silently denied)", async () => {
+    select.mockResolvedValue({ data: [], error: null });
+    const { deleteListing } = await import("./actions");
+
+    const formData = new FormData();
+    formData.set("id", LISTING_ID);
+
+    const result = await deleteListing(formData);
+
+    expect(result).toEqual({ error: "Suppression impossible. Annonce introuvable." });
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 });
