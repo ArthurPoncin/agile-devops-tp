@@ -11,10 +11,10 @@ afin de [bénéfice].
 ```
 
 Chaque US doit contenir :
-- Conditions de validation
-- Critères d'acceptation
+- **Conditions de validation** (côté PO, globales)
+- **Cas fonctionnels** (scénarios nominal / alternatif / erreur)
 - Priorité (High / Medium / Low)
-- Estimation Fibonacci (1, 2, 3, 5, 8, 13)
+- Estimation Fibonacci (1, 2, 3, 5, 8, 13, 21, 34, 55, 89 ; toute US ≥ 21 doit être redécoupée)
 - Sprint cible (1, 2 ou 3)
 
 ---
@@ -58,8 +58,12 @@ Une tâche est **terminée** si :
 - **Priorité :** High / Medium / Low
 - **Estimation :** *(Fibonacci)*
 - **Sprint :** 1 / 2 / 3
-- **Critères d'acceptation :**
+- **Conditions de validation :**
   - [ ] ...
   - [ ] ...
+- **Cas fonctionnels :**
+  - Cas nominal :
+  - Cas alternatif :
+  - Cas d'erreur :
 
 ---

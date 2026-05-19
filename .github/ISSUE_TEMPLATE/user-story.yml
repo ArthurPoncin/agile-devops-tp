@@ -1,0 +1,138 @@
+name: User Story
+description: Créer une User Story Scrum
+title: "[US] "
+labels:
+  - type/user-story
+projects:
+  - ArthurPoncin/5
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Format Scrum
+        > **En tant que** [rôle], **je veux** [fonctionnalité], **afin de** [bénéfice].
+
+  - type: input
+    id: role
+    attributes:
+      label: En tant que (rôle)
+      description: Qui est l'utilisateur de cette fonctionnalité ?
+      placeholder: "ex : utilisateur, admin, étudiant EPSI..."
+    validations:
+      required: true
+
+  - type: input
+    id: feature
+    attributes:
+      label: Je veux (fonctionnalité)
+      description: Quelle action veut-il accomplir ?
+      placeholder: "ex : créer un compte, voter pour un plat..."
+    validations:
+      required: true
+
+  - type: input
+    id: benefit
+    attributes:
+      label: Afin de (bénéfice)
+      description: Quel bénéfice / motivation derrière ?
+      placeholder: "ex : accéder à mes données, partager mon avis..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Conditions de validation
+      description: Liste les conditions globales à valider pour considérer l'US terminée (côté PO).
+      value: |
+        - [ ]
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: functional-cases
+    attributes:
+      label: Cas fonctionnels
+      description: Scénarios concrets (nominal, alternatif, erreur) que l'US doit couvrir.
+      value: |
+        - Cas nominal :
+        - Cas alternatif :
+        - Cas d'erreur :
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priorité
+      options:
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+
+  - type: dropdown
+    id: estimate
+    attributes:
+      label: Estimation (Fibonacci)
+      description: Toute US estimée ≥ 21 doit être redécoupée.
+      options:
+        - "1"
+        - "2"
+        - "3"
+        - "5"
+        - "8"
+        - "13"
+        - "21 (à redécouper)"
+        - "34 (à redécouper)"
+        - "55 (à redécouper)"
+        - "89 (à redécouper)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: sprint
+    attributes:
+      label: Sprint cible
+      options:
+        - Sprint 1
+        - Sprint 2
+        - Sprint 3
+        - Non planifié
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dépendances / Notes
+      description: Autres US ou éléments dont dépend cette US (optionnel).
+      placeholder: "ex : dépend de #12, nécessite l'auth..."
+
+  - type: checkboxes
+    id: dor
+    attributes:
+      label: Definition of Ready (à valider avant le sprint)
+      options:
+        - label: Compréhensible par toute l'équipe
+        - label: Estimable
+        - label: Testable
+        - label: Critères d'acceptation définis
+        - label: Suffisamment petite pour 1 sprint
+        - label: Dépendances identifiées
+        - label: Validée par le PO (Nathan)
+
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of Done (à valider à la livraison)
+      options:
+        - label: Développement terminé
+        - label: Code versionné sur Git
+        - label: Fonctionnalité testée
+        - label: Critères d'acceptation validés
+        - label: Aucune erreur bloquante connue
+        - label: Documentation à jour si nécessaire
+        - label: Fonctionnalité démontrable
+        - label: Validée par le PO (Nathan)
