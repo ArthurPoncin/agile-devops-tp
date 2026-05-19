@@ -73,7 +73,10 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
   if (email !== user.email) {
     const { error: authError } = await supabase.auth.updateUser({ email });
     if (authError) {
-      return { error: "Impossible de mettre à jour l'email." };
+      return {
+        error:
+          "Nom et téléphone enregistrés, mais impossible de mettre à jour l'email. Réessayez plus tard.",
+      };
     }
     emailChangePending = true;
   }

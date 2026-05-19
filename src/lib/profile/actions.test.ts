@@ -208,6 +208,9 @@ describe("updateProfile()", () => {
       validFormData({ email: "alice2@example.com" }),
     );
 
-    expect(result).toEqual({ error: "Impossible de mettre à jour l'email." });
+    expect(result).toEqual({
+      error:
+        "Nom et téléphone enregistrés, mais impossible de mettre à jour l'email. Réessayez plus tard.",
+    });
   });
 });
