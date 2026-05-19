@@ -38,6 +38,20 @@ describe("login()", () => {
     expect(redirect).toHaveBeenCalledWith("/");
   });
 
+  it("rejects malformed input without calling Supabase", async () => {
+    const { login } = await import("./actions");
+
+    const formData = new FormData();
+    formData.set("email", "not-an-email");
+    formData.set("password", "");
+
+    const result = await login(formData);
+
+    expect(signInWithPassword).not.toHaveBeenCalled();
+    expect(redirect).not.toHaveBeenCalled();
+    expect(result).toEqual({ error: "Email ou mot de passe incorrect." });
+  });
+
   it("returns an error message and does not redirect when Supabase rejects credentials", async () => {
     signInWithPassword.mockResolvedValue({
       error: { message: "Invalid login credentials" },
