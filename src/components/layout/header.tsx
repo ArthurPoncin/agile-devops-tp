@@ -17,13 +17,12 @@ export async function Header() {
       <nav>
         {user ? (
           <div className="flex items-center gap-4">
-            <Link 
-              href="/profile" 
-              className="text-sm text-muted-foreground hover:text-black dark:hover:text-zinc-50 transition-colors"
+            <Link
+              href="/profile"
+              className="text-sm text-muted-foreground transition-colors hover:text-black dark:hover:text-zinc-50"
             >
               {user.email}
             </Link>
-            <span className="text-sm text-muted-foreground">{user.email}</span>
             <form action={logout}>
               <Button type="submit" variant="outline" size="sm">
                 Se déconnecter
