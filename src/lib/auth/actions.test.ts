@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const signInWithPassword = vi.fn();
 const signOut = vi.fn();
+const signUp = vi.fn();
 const redirect = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
-    auth: { signInWithPassword, signOut },
+    auth: { signInWithPassword, signOut, signUp },
   })),
 }));
 
@@ -17,6 +18,7 @@ vi.mock("next/navigation", () => ({
 beforeEach(() => {
   signInWithPassword.mockReset();
   signOut.mockReset();
+  signUp.mockReset();
   redirect.mockReset();
 });
 
@@ -78,5 +80,61 @@ describe("logout()", () => {
 
     expect(signOut).toHaveBeenCalled();
     expect(redirect).toHaveBeenCalledWith("/login");
+  });
+});
+
+describe("signup()", () => {
+  it("signs the user up with email/password + name in options.data and redirects home on success", async () => {
+    signUp.mockResolvedValue({ error: null });
+    const { signup } = await import("./actions");
+
+    const formData = new FormData();
+    formData.set("name", "Alice Martin");
+    formData.set("email", "alice@example.com");
+    formData.set("password", "secret12");
+    formData.set("confirmPassword", "secret12");
+
+    await signup(formData);
+
+    expect(signUp).toHaveBeenCalledWith({
+      email: "alice@example.com",
+      password: "secret12",
+      options: { data: { name: "Alice Martin" } },
+    });
+    expect(redirect).toHaveBeenCalledWith("/");
+  });
+
+  it("rejects malformed input without calling Supabase", async () => {
+    const { signup } = await import("./actions");
+
+    const formData = new FormData();
+    formData.set("name", "");
+    formData.set("email", "not-an-email");
+    formData.set("password", "abc");
+    formData.set("confirmPassword", "xyz");
+
+    const result = await signup(formData);
+
+    expect(signUp).not.toHaveBeenCalled();
+    expect(redirect).not.toHaveBeenCalled();
+    expect(result).toEqual({ error: "Inscription invalide. Vérifiez les champs du formulaire." });
+  });
+
+  it("returns an error and does not redirect when Supabase rejects the signup", async () => {
+    signUp.mockResolvedValue({
+      error: { message: "User already registered" },
+    });
+    const { signup } = await import("./actions");
+
+    const formData = new FormData();
+    formData.set("name", "Alice Martin");
+    formData.set("email", "alice@example.com");
+    formData.set("password", "secret12");
+    formData.set("confirmPassword", "secret12");
+
+    const result = await signup(formData);
+
+    expect(result).toEqual({ error: "Inscription impossible. Cet email est peut-être déjà utilisé." });
+    expect(redirect).not.toHaveBeenCalled();
   });
 });

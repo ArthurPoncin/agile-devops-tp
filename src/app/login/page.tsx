@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { login } from "@/lib/auth/actions";
 import { LoginForm } from "@/components/auth/login-form";
 
@@ -12,6 +13,12 @@ export default function LoginPage() {
           </p>
         </div>
         <LoginForm action={login} />
+        <p className="text-sm text-muted-foreground">
+          Pas encore de compte ?{" "}
+          <Link href="/signup" className="font-medium underline">
+            Créer un compte
+          </Link>
+        </p>
       </div>
     </main>
   );
