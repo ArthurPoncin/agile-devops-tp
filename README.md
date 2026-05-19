@@ -14,9 +14,52 @@
 | Aurélien  | Dev Team         |
 | Thomas    | Dev Team         |
 
-## Projet
+## Projet : ImmoMatch
 
-*À définir lors du cadrage de la demi-journée 1.*
+Plateforme immobilière simple (annonces + recherche + favoris + messagerie + génération IA de descriptions).
+La fiche projet et le Product Backlog complet sont gérés par le PO (Nathan).
+
+## Stack technique
+
+| Couche | Techno |
+|--------|--------|
+| Framework | Next.js 16 + React 19 + TypeScript (App Router) |
+| Styling | Tailwind CSS 4 |
+| UI components | shadcn/ui (sur base-ui) |
+| Auth + DB + Storage | Supabase (via `@supabase/ssr`) |
+| IA (Sprint 3) | Mistral SDK (US-12) |
+| Tests | Vitest + Testing Library |
+| Linting | ESLint 9 |
+
+## Installation locale
+
+```bash
+# 1. Cloner et installer
+git clone https://github.com/ArthurPoncin/agile-devops-tp.git
+cd agile-devops-tp
+npm install
+
+# 2. Configurer les variables d'environnement
+cp .env.local.example .env.local
+# puis renseigner NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY
+# (créer un projet sur https://supabase.com pour récupérer les clés)
+
+# 3. Lancer le dev server
+npm run dev
+```
+
+App dispo sur `http://localhost:3000`.
+
+## Scripts utiles
+
+| Commande | Effet |
+|----------|-------|
+| `npm run dev` | Dev server (Turbopack) |
+| `npm run build` | Build de prod |
+| `npm run start` | Lancer le build de prod |
+| `npm run lint` | Lint ESLint |
+| `npm test` | Tests Vitest en mode watch |
+| `npm run test:run` | Tests Vitest one-shot |
 
 ## Organisation du dépôt
 
@@ -33,7 +76,7 @@
 | Sprint Review     | Fin de sprint             | Démo + feedback client              |
 | Rétrospective     | Fin de sprint             | Keep / Drop / Try                   |
 
-**Estimation :** Fibonacci `1 – 2 – 3 – 5 – 8 – 13 – 21` (toute US ≥ 21 doit être redécoupée).
+**Estimation :** Fibonacci `1, 2, 3, 5, 8, 13, 21, 34, 55, 89` (toute US ≥ 21 doit être redécoupée).
 
 ## Suivi
 
