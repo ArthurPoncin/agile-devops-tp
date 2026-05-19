@@ -30,3 +30,4 @@ Exemple : *« Mettre en place la structure du projet et livrer une première fon
 | Jihad     | (SM) Suivi blocages, cérémonies   |
 | Arthur    | (Dev)                             |
 | Aurélien  | (Dev)                             |
+| Thomas    | (Dev)                             |

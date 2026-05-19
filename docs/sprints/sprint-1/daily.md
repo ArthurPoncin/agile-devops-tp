@@ -1,4 +1,4 @@
-# Daily Scrum — Sprint 1
+# Daily Scrum - Sprint 1
 
 > Format obligatoire pour chaque membre actif :
 > - Ce que j'ai fait
@@ -26,6 +26,12 @@
 - **Blocages :**
 
 ## Aurélien (Dev)
+
+- **Fait :**
+- **À faire :**
+- **Blocages :**
+
+## Thomas (Dev)
 
 - **Fait :**
 - **À faire :**

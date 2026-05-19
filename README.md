@@ -1,6 +1,6 @@
-# TP Agile & DevOps — Équipe 1
+# TP Agile & DevOps - Équipe 1
 
-> **EPSI Nantes** — Promotion 2025-2026 — Cursus DEVIA
+> **EPSI Nantes** - Promotion 2025-2026 - Cursus DEVIA
 > **Formateur / Client :** Kevin Niel
 > **Sujet :** [github.com/kevinniel/2526-EPSINANTES-DEVIA-AGILE](https://github.com/kevinniel/2526-EPSINANTES-DEVIA-AGILE/blob/main/tp.md)
 
@@ -12,7 +12,7 @@
 | Jihad     | Scrum Master     |
 | Arthur    | Dev Team         |
 | Aurélien  | Dev Team         |
-| Thomas    | *absent*         |
+| Thomas    | Dev Team         |
 
 ## Projet
 
@@ -20,9 +20,9 @@
 
 ## Organisation du dépôt
 
-- [`docs/project-card.md`](docs/project-card.md) — Fiche projet (cadrage)
-- [`docs/product-backlog.md`](docs/product-backlog.md) — Product Backlog, DoR, DoD
-- [`docs/sprints/`](docs/sprints/) — Artefacts de chaque sprint : Planning, Daily, Review, Rétrospective
+- [`docs/project-card.md`](docs/project-card.md) - Fiche projet (cadrage)
+- [`docs/product-backlog.md`](docs/product-backlog.md) - Product Backlog, DoR, DoD
+- [`docs/sprints/`](docs/sprints/) - Artefacts de chaque sprint : Planning, Daily, Review, Rétrospective
 
 ## Méthodologie Scrum
 

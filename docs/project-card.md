@@ -1,6 +1,6 @@
 # Fiche projet
 
-> Cadrage du projet — à remplir lors de la **demi-journée 1, étape 2**.
+> Cadrage du projet, à remplir lors de la **demi-journée 1, étape 2**.
 
 ## Nom du projet
 
@@ -36,7 +36,7 @@
 ## Contraintes identifiées
 
 - Délai : 3 demi-journées
-- Équipe : 4 personnes actives (Thomas absent)
+- Équipe : 5 développeurs (Nathan, Jihad, Arthur, Aurélien, Thomas)
 - *(autres contraintes...)*
 
 ## Risques techniques

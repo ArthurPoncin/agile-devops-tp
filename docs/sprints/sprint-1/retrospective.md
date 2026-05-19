@@ -2,15 +2,15 @@
 
 > Format : Keep / Drop / Try
 
-## Keep — ce qu'on garde
+## Keep : ce qu'on garde
 
 - 
 
-## Drop — ce qu'on arrête
+## Drop : ce qu'on arrête
 
 - 
 
-## Try — ce qu'on essaie au prochain sprint
+## Try : ce qu'on essaie au prochain sprint
 
 - 
 

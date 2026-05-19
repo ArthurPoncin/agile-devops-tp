@@ -1,6 +1,6 @@
 # Product Backlog
 
-> Liste priorisée des User Stories du projet — au moins **8 US** pour la demi-journée 1.
+> Liste priorisée des User Stories du projet : au moins **8 US** pour la demi-journée 1.
 
 ## Format des User Stories
 
@@ -49,7 +49,7 @@ Une tâche est **terminée** si :
 > *À compléter après le choix du projet (cadrage demi-journée 1).*
 > Chaque US est aussi créée en **issue GitHub** et trackée dans le **Kanban**.
 
-### US-001 — *Titre*
+### US-001 : *Titre*
 
 > En tant que ...,
 > je veux ...,
