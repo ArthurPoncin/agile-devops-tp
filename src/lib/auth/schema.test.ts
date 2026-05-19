@@ -82,4 +82,14 @@ describe("signupSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rejects a whitespace-only name", () => {
+    const result = signupSchema.safeParse({
+      name: "   ",
+      email: "alice@example.com",
+      password: "secret12",
+      confirmPassword: "secret12",
+    });
+    expect(result.success).toBe(false);
+  });
 });

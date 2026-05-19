@@ -9,7 +9,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 
 export const signupSchema = z
   .object({
-    name: z.string().min(1, "Nom requis."),
+    name: z.string().trim().min(1, "Nom requis."),
     email: z.string().min(1, "Email requis.").email("Format d'email invalide."),
     password: z
       .string()
