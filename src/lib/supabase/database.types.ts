@@ -8,6 +8,8 @@ export type Json =
 
 export type Database = {
   public: {
+    Views: { [key: string]: never };
+    Functions: { [key: string]: never };
     Tables: {
       profiles: {
         Row: {
@@ -31,6 +33,7 @@ export type Database = {
           phone?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       listings: {
         Row: {
@@ -78,6 +81,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       favorites: {
         Row: {
@@ -95,6 +99,7 @@ export type Database = {
           listing_id?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       messages: {
         Row: {
@@ -127,6 +132,7 @@ export type Database = {
           read?: boolean;
           created_at?: string;
         };
+        Relationships: [];
       };
     };
     Enums: {
