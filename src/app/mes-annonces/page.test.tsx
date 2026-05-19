@@ -57,6 +57,23 @@ describe("MesAnnoncesPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders an error message when the Supabase query fails", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "u1", email: "alice@example.com" } },
+    });
+    order.mockResolvedValue({ data: null, error: { message: "boom" } });
+    const { default: Page } = await import("./page");
+
+    render(await Page());
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /impossible de charger vos annonces/i,
+    );
+    expect(
+      screen.queryByText(/vous n'avez pas encore publié d'annonce/i),
+    ).not.toBeInTheDocument();
+  });
+
   it("queries listings scoped to the current user, ordered by created_at desc, and renders them", async () => {
     getUser.mockResolvedValue({
       data: { user: { id: "u1", email: "alice@example.com" } },

@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { ListingCard } from "@/components/listings/listing-card";
-import type { Listing } from "@/lib/supabase/database.types";
-
-type ListingSummary = Pick<Listing, "id" | "title" | "status" | "created_at">;
+import {
+  ListingCard,
+  type ListingSummary,
+} from "@/components/listings/listing-card";
 
 export default async function MesAnnoncesPage() {
   const supabase = await createClient();
@@ -15,21 +15,24 @@ export default async function MesAnnoncesPage() {
     redirect("/login");
   }
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("listings")
     .select("id, title, status, created_at")
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false });
 
   const listings = (data ?? []) as ListingSummary[];
-  const hasListings = listings.length > 0;
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10 space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">Mes annonces</h1>
-      {hasListings ? (
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          Impossible de charger vos annonces. Réessayez plus tard.
+        </p>
+      ) : listings.length > 0 ? (
         <ul className="space-y-3">
-          {listings.map((listing: ListingSummary) => (
+          {listings.map((listing) => (
             <li key={listing.id}>
               <ListingCard listing={listing} />
             </li>

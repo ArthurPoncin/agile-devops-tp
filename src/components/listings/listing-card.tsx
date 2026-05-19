@@ -1,12 +1,10 @@
 import { Badge } from "@/components/ui/badge";
-import type { ListingStatus } from "@/lib/supabase/database.types";
+import type { Listing, ListingStatus } from "@/lib/supabase/database.types";
 
-type ListingCardData = {
-  id: string;
-  title: string;
-  status: ListingStatus;
-  created_at: string;
-};
+export type ListingSummary = Pick<
+  Listing,
+  "id" | "title" | "status" | "created_at"
+>;
 
 const statusLabels: Record<ListingStatus, string> = {
   active: "Active",
@@ -19,7 +17,7 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
   year: "numeric",
 });
 
-export function ListingCard({ listing }: { listing: ListingCardData }) {
+export function ListingCard({ listing }: { listing: ListingSummary }) {
   return (
     <article className="flex items-center justify-between rounded-md border p-4">
       <div className="space-y-1">
