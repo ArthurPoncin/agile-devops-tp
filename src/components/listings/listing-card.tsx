@@ -1,4 +1,6 @@
 import { Badge } from "@/components/ui/badge";
+import { DeleteListingDialog } from "@/components/listings/delete-listing-dialog";
+import { deleteListing } from "@/lib/listings/actions";
 import type { Listing, ListingStatus } from "@/lib/supabase/database.types";
 
 export type ListingSummary = Pick<
@@ -26,9 +28,12 @@ export function ListingCard({ listing }: { listing: ListingSummary }) {
           {dateFormatter.format(new Date(listing.created_at))}
         </p>
       </div>
-      <Badge variant={listing.status === "active" ? "default" : "secondary"}>
-        {statusLabels[listing.status]}
-      </Badge>
+      <div className="flex items-center gap-3">
+        <Badge variant={listing.status === "active" ? "default" : "secondary"}>
+          {statusLabels[listing.status]}
+        </Badge>
+        <DeleteListingDialog listingId={listing.id} action={deleteListing} />
+      </div>
     </article>
   );
 }

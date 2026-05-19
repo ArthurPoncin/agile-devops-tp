@@ -34,4 +34,19 @@ describe("<ListingCard>", () => {
 
     expect(screen.getByText("Archivée")).toBeInTheDocument();
   });
+
+  it("renders a 'Supprimer' button wired to the delete dialog", () => {
+    render(
+      <ListingCard
+        listing={{
+          id: "l3",
+          title: "Annonce à supprimer",
+          status: "active",
+          created_at: "2025-04-10T08:00:00Z",
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /supprimer/i })).toBeInTheDocument();
+  });
 });
