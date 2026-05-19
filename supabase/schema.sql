@@ -156,7 +156,27 @@ create policy "Mark as read par le owner de l'annonce"
 create index messages_listing_idx on public.messages (listing_id);
 
 -- ============================================================
--- 5. Storage : policies pour le bucket "listings"
+-- 5. GRANTs de rôles (anon / authenticated)
+--    Indispensable : les policies RLS ne sont évaluées que si le rôle
+--    a déjà le privilège SQL de base sur la table. Sans ces GRANT,
+--    Supabase renvoie "permission denied for table ..." (code 42501).
+--    Note : auto-grant par le Dashboard quand on crée la table via UI,
+--    mais PAS via SQL Editor — d'où ce bloc explicite.
+-- ============================================================
+
+grant select, update on public.profiles to authenticated;
+grant select on public.profiles to anon;
+
+grant select, insert, update, delete on public.listings to authenticated;
+grant select on public.listings to anon;
+
+grant select, insert, update, delete on public.favorites to authenticated;
+
+grant select, update on public.messages to authenticated;
+grant insert on public.messages to anon, authenticated;
+
+-- ============================================================
+-- 6. Storage : policies pour le bucket "listings"
 --    (créer le bucket AVANT de lancer ces policies, via UI :
 --     Storage → New bucket → name="listings" → Public bucket coché)
 -- ============================================================
