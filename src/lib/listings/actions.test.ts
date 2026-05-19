@@ -4,6 +4,7 @@ const getUser = vi.fn();
 const insert = vi.fn();
 const from = vi.fn();
 const upload = vi.fn();
+const remove = vi.fn();
 const storageFrom = vi.fn();
 const redirect = vi.fn((path: string) => {
   throw new Error(`NEXT_REDIRECT:${path}`);
@@ -26,13 +27,15 @@ beforeEach(() => {
   insert.mockReset();
   from.mockReset();
   upload.mockReset();
+  remove.mockReset();
   storageFrom.mockReset();
   redirect.mockClear();
 
   from.mockImplementation(() => ({ insert }));
-  storageFrom.mockImplementation(() => ({ upload }));
+  storageFrom.mockImplementation(() => ({ upload, remove }));
   insert.mockResolvedValue({ error: null });
   upload.mockResolvedValue({ data: { path: "stub" }, error: null });
+  remove.mockResolvedValue({ data: [], error: null });
 });
 
 afterEach(() => {
@@ -182,5 +185,105 @@ describe("createListing()", () => {
     expect(result).toEqual({ error: "Impossible d'envoyer les photos." });
     expect(insert).not.toHaveBeenCalled();
     expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-image files server-side", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "user-7" } },
+      error: null,
+    });
+    const { createListing } = await import("./actions");
+
+    const fd = validFormData();
+    fd.append("photos", new File(["pdf-bytes"], "doc.pdf", { type: "application/pdf" }));
+
+    const result = await createListing(fd);
+
+    expect(result).toEqual({ error: "Format de photo invalide." });
+    expect(upload).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects photos larger than 5 MB", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "user-7" } },
+      error: null,
+    });
+    const { createListing } = await import("./actions");
+
+    const tooBig = new File([new Uint8Array(5 * 1024 * 1024 + 1)], "big.jpg", {
+      type: "image/jpeg",
+    });
+    const fd = validFormData();
+    fd.append("photos", tooBig);
+
+    const result = await createListing(fd);
+
+    expect(result).toEqual({ error: "Photo trop volumineuse (max 5 Mo)." });
+    expect(upload).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects more than 10 photos", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "user-7" } },
+      error: null,
+    });
+    const { createListing } = await import("./actions");
+
+    const fd = validFormData();
+    for (let i = 0; i < 11; i++) {
+      fd.append("photos", new File(["x"], `p${i}.jpg`, { type: "image/jpeg" }));
+    }
+
+    const result = await createListing(fd);
+
+    expect(result).toEqual({ error: "Maximum 10 photos." });
+    expect(upload).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("removes already-uploaded photos when a later upload fails", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "user-7" } },
+      error: null,
+    });
+    upload
+      .mockResolvedValueOnce({ data: { path: "ok" }, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "boom" } });
+    const { createListing } = await import("./actions");
+
+    const fd = validFormData();
+    fd.append("photos", new File(["a"], "a.jpg", { type: "image/jpeg" }));
+    fd.append("photos", new File(["b"], "b.jpg", { type: "image/jpeg" }));
+
+    const result = await createListing(fd);
+
+    expect(result).toEqual({ error: "Impossible d'envoyer les photos." });
+    expect(remove).toHaveBeenCalledTimes(1);
+    const removedPaths = remove.mock.calls[0][0] as string[];
+    expect(removedPaths).toHaveLength(1);
+    expect(removedPaths[0]).toMatch(/^user-7\/.+\.jpg$/);
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("removes uploaded photos when the database insert fails", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "user-7" } },
+      error: null,
+    });
+    insert.mockResolvedValue({ error: { message: "boom" } });
+    const { createListing } = await import("./actions");
+
+    const fd = validFormData();
+    fd.append("photos", new File(["a"], "a.jpg", { type: "image/jpeg" }));
+    fd.append("photos", new File(["b"], "b.png", { type: "image/png" }));
+
+    const result = await createListing(fd);
+
+    expect(result).toEqual({ error: "Impossible de créer l'annonce." });
+    expect(remove).toHaveBeenCalledTimes(1);
+    const removedPaths = remove.mock.calls[0][0] as string[];
+    expect(removedPaths).toHaveLength(2);
   });
 });
