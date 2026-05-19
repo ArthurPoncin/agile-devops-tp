@@ -41,7 +41,7 @@ npm install
 
 # 2. Configurer les variables d'environnement
 cp .env.local.example .env.local
-# puis renseigner NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY
+# puis renseigner NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
 # 3. Lancer le dev server
 npm run dev
@@ -52,7 +52,7 @@ App dispo sur `http://localhost:3000`.
 ### Setup Supabase (premier lancement)
 
 1. Créer un projet sur https://supabase.com
-2. *Settings → API* : récupérer `Project URL` + `anon key` → coller dans `.env.local`
+2. *Settings → API* : récupérer `Project URL` + **Publishable key** (`sb_publishable_*`, PAS la secret) → coller dans `.env.local`
 3. *Authentication → Providers → Email* : activer Email, **désactiver Confirm email** (pas de SMTP en MVP)
 4. *Storage → New bucket* : créer le bucket **`listings`** en **Public**
 5. *SQL Editor → New query* : coller le contenu de [`supabase/schema.sql`](supabase/schema.sql) → Run
