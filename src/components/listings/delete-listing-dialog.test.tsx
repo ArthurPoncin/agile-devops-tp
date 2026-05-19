@@ -1,18 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DeleteListingDialog } from "./delete-listing-dialog";
 
 const LISTING_ID = "11111111-1111-4111-8111-111111111111";
 
+const successAction = () => vi.fn().mockResolvedValue({ ok: true } as const);
+
 describe("<DeleteListingDialog>", () => {
   it("renders a 'Supprimer' trigger button", () => {
-    render(<DeleteListingDialog listingId={LISTING_ID} action={vi.fn()} />);
+    render(<DeleteListingDialog listingId={LISTING_ID} action={successAction()} />);
     expect(screen.getByRole("button", { name: /supprimer/i })).toBeInTheDocument();
   });
 
   it("opens a confirmation dialog when the trigger is clicked", async () => {
-    render(<DeleteListingDialog listingId={LISTING_ID} action={vi.fn()} />);
+    render(<DeleteListingDialog listingId={LISTING_ID} action={successAction()} />);
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: /supprimer/i }));
@@ -22,7 +24,7 @@ describe("<DeleteListingDialog>", () => {
   });
 
   it("submits the listing id to the action when confirming", async () => {
-    const action = vi.fn();
+    const action = successAction();
     render(<DeleteListingDialog listingId={LISTING_ID} action={action} />);
     const user = userEvent.setup();
 
@@ -36,7 +38,7 @@ describe("<DeleteListingDialog>", () => {
   });
 
   it("does not call the action when the user cancels", async () => {
-    const action = vi.fn();
+    const action = successAction();
     render(<DeleteListingDialog listingId={LISTING_ID} action={action} />);
     const user = userEvent.setup();
 
@@ -45,5 +47,29 @@ describe("<DeleteListingDialog>", () => {
     await user.click(within(dialog).getByRole("button", { name: /annuler/i }));
 
     expect(action).not.toHaveBeenCalled();
+  });
+
+  it("closes the dialog after a successful deletion", async () => {
+    render(<DeleteListingDialog listingId={LISTING_ID} action={successAction()} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: /supprimer/i }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: /^supprimer$/i }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("keeps the dialog open and shows the error message on failure", async () => {
+    const action = vi.fn().mockResolvedValue({ error: "Suppression impossible." });
+    render(<DeleteListingDialog listingId={LISTING_ID} action={action} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: /supprimer/i }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: /^supprimer$/i }));
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(/suppression impossible/i);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

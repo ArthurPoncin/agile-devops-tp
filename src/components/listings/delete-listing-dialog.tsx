@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,8 +13,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-type DeleteState = { error?: string } | null;
-type DeleteAction = (formData: FormData) => Promise<void | { error: string }>;
+type DeleteState = { ok: true } | { error: string } | null;
+type DeleteAction = (formData: FormData) => Promise<{ ok: true } | { error: string }>;
 
 export function DeleteListingDialog({
   listingId,
@@ -23,13 +23,20 @@ export function DeleteListingDialog({
   listingId: string;
   action: DeleteAction;
 }) {
+  const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState<DeleteState, FormData>(
-    async (_prev, formData) => (await action(formData)) ?? null,
+    async (_prev, formData) => {
+      const result = await action(formData);
+      if ("ok" in result && result.ok) {
+        setOpen(false);
+      }
+      return result;
+    },
     null,
   );
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button variant="destructive">Supprimer</Button>} />
       <DialogContent>
         <DialogHeader>
@@ -40,7 +47,7 @@ export function DeleteListingDialog({
         </DialogHeader>
         <form action={formAction}>
           <input type="hidden" name="id" value={listingId} />
-          {state?.error ? (
+          {state && "error" in state ? (
             <p role="alert" className="text-sm text-destructive">
               {state.error}
             </p>
