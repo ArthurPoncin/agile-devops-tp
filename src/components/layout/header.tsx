@@ -25,9 +25,14 @@ export async function Header() {
             </form>
           </div>
         ) : (
-          <Link href="/login" className="text-sm font-medium hover:underline">
-            Se connecter
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="text-sm font-medium hover:underline">
+              Se connecter
+            </Link>
+            <Link href="/signup" className="text-sm font-medium hover:underline">
+              Créer un compte
+            </Link>
+          </div>
         )}
       </nav>
     </header>

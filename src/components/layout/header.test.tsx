@@ -24,6 +24,16 @@ describe("<Header>", () => {
     expect(loginLink).toHaveAttribute("href", "/login");
   });
 
+  it("shows a link to /signup when no user is signed in", async () => {
+    getUser.mockResolvedValue({ data: { user: null } });
+    const { Header } = await import("./header");
+
+    render(await Header());
+
+    const signupLink = screen.getByRole("link", { name: /cr[ée]er un compte/i });
+    expect(signupLink).toHaveAttribute("href", "/signup");
+  });
+
   it("shows the user's email and a logout button when signed in", async () => {
     getUser.mockResolvedValue({
       data: { user: { id: "u1", email: "alice@example.com" } },
