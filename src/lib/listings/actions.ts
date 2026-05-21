@@ -27,6 +27,7 @@ export async function createListing(formData: FormData) {
     surface: formData.get("surface"),
     rooms: formData.get("rooms"),
     price: formData.get("price"),
+    description: formData.get("description") || undefined,
   });
 
   if (!parsed.success) {
@@ -77,14 +78,16 @@ export async function createListing(formData: FormData) {
     price: parsed.data.price,
     photos: uploadedUrls,
     status: "active",
+    ...(parsed.data.description ? { description: parsed.data.description } : {}),
   };
   const { error } = await supabase.from("listings").insert(payload);
 
   if (error) {
+    console.error("[createListing] supabase insert error:", error);
     if (uploadedUrls.length > 0) {
       await blobDel(uploadedUrls, { token: process.env.BLOB_READ_WRITE_TOKEN });
     }
-    return { error: "Impossible de créer l'annonce." };
+    return { error: `Impossible de créer l'annonce. (${error.message})` };
   }
 
   redirect("/");

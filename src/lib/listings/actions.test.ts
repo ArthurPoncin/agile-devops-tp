@@ -144,7 +144,7 @@ describe("createListing()", () => {
 
     const result = await createListing(validFormData());
 
-    expect(result).toEqual({ error: "Impossible de créer l'annonce." });
+    expect((result as { error: string }).error).toContain("Impossible de créer l'annonce.");
     expect(redirect).not.toHaveBeenCalled();
   });
 
@@ -312,7 +312,7 @@ describe("createListing()", () => {
 
     const result = await createListing(fd);
 
-    expect(result).toEqual({ error: "Impossible de créer l'annonce." });
+    expect((result as { error: string }).error).toContain("Impossible de créer l'annonce.");
     expect(blobDel).toHaveBeenCalledTimes(1);
     expect(blobDel).toHaveBeenCalledWith([url1, url2], expect.any(Object));
   });

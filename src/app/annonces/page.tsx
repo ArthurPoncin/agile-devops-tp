@@ -75,8 +75,10 @@ export default async function AnnoncesPage({ searchParams }: Props) {
  
   let query = supabase
     .from("listings")
-    .select("id, title, city, price, surface, photos", { count: "exact" })
-    .eq("status", "active");
+    .select("id, title, city, price, surface, photos, description", { count: "exact" })
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   if (trimmedCity) query = query.ilike("city", `%${trimmedCity}%`);
   if (validType) query = query.eq("type", validType);
