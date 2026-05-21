@@ -27,7 +27,7 @@ export function PublicListingCard({ listing }: { listing: PublicListingSummary }
 
   return (
     <Link href={`/listings/${listing.id}`} className="block h-full">
-      <Card className="overflow-hidden h-full flex flex-col transition-shadow hover:shadow-md">
+      <Card className="overflow-hidden h-full flex flex-col transition-all hover:shadow-md hover:-translate-y-0.5">
         <div className="relative aspect-[4/3] bg-muted shrink-0">
           {photoUrl ? (
             <Image

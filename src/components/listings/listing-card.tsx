@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { DeleteListingDialog } from "@/components/listings/delete-listing-dialog";
 import { deleteListing } from "@/lib/listings/actions";
 import type { Listing, ListingStatus } from "@/lib/supabase/database.types";
-import { buttonVariants } from "@/components/ui/button";
 
 export type ListingSummary = Pick<
   Listing,

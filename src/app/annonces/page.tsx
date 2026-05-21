@@ -71,17 +71,14 @@ export default async function AnnoncesPage({ searchParams }: Props) {
 
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   let query = supabase
     .from("listings")
-    .select(
-      `id, title, city, price, surface, photos, description,
-       favorites(user_id)`,
-      { count: "exact" },
-    )
+    .select(`
+      id, title, city, price, surface, photos,
+      favorites(user_id)
+    `, { count: "exact" })
     .eq("status", "active")
     .eq("favorites.user_id", user?.id ?? "00000000-0000-0000-0000-000000000000");
 
@@ -97,9 +94,7 @@ export default async function AnnoncesPage({ searchParams }: Props) {
     .order("created_at", { ascending: false })
     .range(from, to);
 
-  const listings = (data ?? []) as Array<
-    PublicListingSummary & { favorites: { user_id: string }[] }
-  >;
+  const listings = (data ?? []) as Array<PublicListingSummary & { favorites: { user_id: string }[] }>;
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE);
 
   const filterParams: Record<string, string | null> = {

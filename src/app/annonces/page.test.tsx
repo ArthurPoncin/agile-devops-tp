@@ -19,11 +19,15 @@ order.mockReturnValue(builder);
 select.mockReturnValue(builder);
 from.mockReturnValue({ select });
 
-const getUser = vi.fn(async () => ({ data: { user: null } }));
+const getUser = vi.fn().mockResolvedValue({ data: { user: null } });
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({ from, auth: { getUser } })),
 }));
+
+function mockRange(result = { data: [], count: 0, error: null }) {
+  range.mockReturnValue(Object.assign(Promise.resolve(result), builder));
+}
 
 beforeEach(() => {
   eq.mockClear();
@@ -34,7 +38,7 @@ beforeEach(() => {
   select.mockClear();
   from.mockClear();
   range.mockReset();
-  range.mockResolvedValue({ data: [], count: 0, error: null });
+  mockRange();
 });
 
 describe("AnnoncesPage filters", () => {
@@ -221,7 +225,7 @@ describe("AnnoncesPage filters", () => {
   });
 
   it("preserves filter searchParams in pagination links", async () => {
-    range.mockResolvedValue({
+    mockRange({
       data: Array.from({ length: 9 }, (_, i) => ({
         id: `id-${i}`,
         title: `Listing ${i}`,
@@ -229,6 +233,7 @@ describe("AnnoncesPage filters", () => {
         price: 200000,
         surface: 80,
         photos: [],
+        favorites: [],
       })),
       count: 30,
       error: null,

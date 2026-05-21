@@ -33,7 +33,7 @@ export default async function EditListingPage({ params }: EditListingPageProps) 
     <main className="flex flex-1 items-center justify-center px-6 py-16">
       <div className="w-full max-w-xl space-y-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Modifier l'annonce</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Modifier l&apos;annonce</h1>
           <p className="text-sm text-muted-foreground">
             Modifiez les informations de votre bien immobilier.
           </p>
