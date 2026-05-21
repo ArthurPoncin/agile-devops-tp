@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const LISTING_ID = "11111111-1111-4111-8111-111111111111";
+const BLOB_BASE = "https://rwjv07fuxbtccnji.private.blob.vercel-storage.com";
 
 const getUser = vi.fn();
 const insert = vi.fn();
@@ -8,9 +9,8 @@ const select = vi.fn();
 const eq = vi.fn(() => ({ select }));
 const del = vi.fn(() => ({ eq }));
 const from = vi.fn();
-const upload = vi.fn();
-const remove = vi.fn();
-const storageFrom = vi.fn();
+const blobPut = vi.fn();
+const blobDel = vi.fn();
 const redirect = vi.fn((path: string) => {
   throw new Error(`NEXT_REDIRECT:${path}`);
 });
@@ -20,8 +20,12 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser },
     from,
-    storage: { from: storageFrom },
   })),
+}));
+
+vi.mock("@vercel/blob", () => ({
+  put: blobPut,
+  del: blobDel,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -39,20 +43,24 @@ beforeEach(() => {
   eq.mockReset();
   del.mockReset();
   from.mockReset();
-  upload.mockReset();
-  remove.mockReset();
-  storageFrom.mockReset();
+  blobPut.mockReset();
+  blobDel.mockReset();
   redirect.mockClear();
   revalidatePath.mockReset();
 
   eq.mockImplementation(() => ({ select }));
   del.mockImplementation(() => ({ eq }));
   from.mockImplementation(() => ({ insert, delete: del }));
-  storageFrom.mockImplementation(() => ({ upload, remove }));
   getUser.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
   insert.mockResolvedValue({ error: null });
-  upload.mockResolvedValue({ data: { path: "stub" }, error: null });
-  remove.mockResolvedValue({ data: [], error: null });
+  blobPut.mockResolvedValue({
+    url: `${BLOB_BASE}/annonce/stub.jpg`,
+    pathname: "annonce/stub.jpg",
+    downloadUrl: `${BLOB_BASE}/annonce/stub.jpg`,
+    contentType: "image/jpeg",
+    contentDisposition: "inline",
+  });
+  blobDel.mockResolvedValue(undefined);
   select.mockResolvedValue({ data: [{ id: LISTING_ID }], error: null });
 });
 
@@ -60,7 +68,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function validFormData(overrides: Partial<Record<string, string>> = {}) {
+function validFormData(overrides: Record<string, string> = {}) {
   const fd = new FormData();
   fd.set("title", "Bel appartement");
   fd.set("type", "appartement");
@@ -69,7 +77,7 @@ function validFormData(overrides: Partial<Record<string, string>> = {}) {
   fd.set("rooms", "3");
   fd.set("price", "250000");
   for (const [k, v] of Object.entries(overrides)) {
-    fd.set(k, v as string);
+    fd.set(k, v);
   }
   return fd;
 }
@@ -83,7 +91,7 @@ describe("createListing()", () => {
 
     expect(redirect).toHaveBeenCalledWith("/login");
     expect(insert).not.toHaveBeenCalled();
-    expect(upload).not.toHaveBeenCalled();
+    expect(blobPut).not.toHaveBeenCalled();
   });
 
   it("returns a validation error and does not touch the database when fields are invalid", async () => {
@@ -97,7 +105,7 @@ describe("createListing()", () => {
 
     expect(result).toEqual({ error: "Champs invalides." });
     expect(insert).not.toHaveBeenCalled();
-    expect(upload).not.toHaveBeenCalled();
+    expect(blobPut).not.toHaveBeenCalled();
     expect(redirect).not.toHaveBeenCalled();
   });
 
@@ -140,11 +148,16 @@ describe("createListing()", () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 
-  it("uploads each photo into the user's folder of the 'listings' bucket and persists the paths", async () => {
+  it("uploads each photo to the 'annonce/' folder in Vercel Blob and persists the URLs", async () => {
     getUser.mockResolvedValue({
       data: { user: { id: "user-7" } },
       error: null,
     });
+    const url1 = `${BLOB_BASE}/annonce/first.jpg`;
+    const url2 = `${BLOB_BASE}/annonce/second.png`;
+    blobPut
+      .mockResolvedValueOnce({ url: url1, pathname: "annonce/first.jpg", downloadUrl: url1, contentType: "image/jpeg", contentDisposition: "inline" })
+      .mockResolvedValueOnce({ url: url2, pathname: "annonce/second.png", downloadUrl: url2, contentType: "image/png", contentDisposition: "inline" });
     const { createListing } = await import("./actions");
 
     const fd = validFormData();
@@ -155,20 +168,16 @@ describe("createListing()", () => {
 
     await expect(createListing(fd)).rejects.toThrow("NEXT_REDIRECT:/");
 
-    expect(storageFrom).toHaveBeenCalledWith("listings");
-    expect(upload).toHaveBeenCalledTimes(2);
+    expect(blobPut).toHaveBeenCalledTimes(2);
+    expect(blobPut.mock.calls[0][0]).toMatch(/^annonce\/.+\.jpg$/);
+    expect(blobPut.mock.calls[0][1]).toBe(photo1);
+    expect(blobPut.mock.calls[1][0]).toMatch(/^annonce\/.+\.png$/);
+    expect(blobPut.mock.calls[1][1]).toBe(photo2);
 
-    const firstCall = upload.mock.calls[0];
-    const secondCall = upload.mock.calls[1];
-    expect(firstCall[0]).toMatch(/^user-7\/.+\.jpg$/);
-    expect(firstCall[1]).toBe(photo1);
-    expect(secondCall[0]).toMatch(/^user-7\/.+\.png$/);
-    expect(secondCall[1]).toBe(photo2);
-
-    const insertedPaths = (insert.mock.calls[0][0] as { photos: string[] }).photos;
-    expect(insertedPaths).toHaveLength(2);
-    expect(insertedPaths[0]).toBe(firstCall[0]);
-    expect(insertedPaths[1]).toBe(secondCall[0]);
+    const insertedUrls = (insert.mock.calls[0][0] as { photos: string[] }).photos;
+    expect(insertedUrls).toHaveLength(2);
+    expect(insertedUrls[0]).toBe(url1);
+    expect(insertedUrls[1]).toBe(url2);
   });
 
   it("skips empty file entries (browsers send empty File when no file is selected)", async () => {
@@ -183,7 +192,7 @@ describe("createListing()", () => {
 
     await expect(createListing(fd)).rejects.toThrow("NEXT_REDIRECT:/");
 
-    expect(upload).not.toHaveBeenCalled();
+    expect(blobPut).not.toHaveBeenCalled();
     expect((insert.mock.calls[0][0] as { photos: string[] }).photos).toEqual([]);
   });
 
@@ -192,7 +201,7 @@ describe("createListing()", () => {
       data: { user: { id: "user-7" } },
       error: null,
     });
-    upload.mockResolvedValue({ data: null, error: { message: "storage boom" } });
+    blobPut.mockRejectedValue(new Error("blob error"));
     const { createListing } = await import("./actions");
 
     const fd = validFormData();
@@ -218,7 +227,7 @@ describe("createListing()", () => {
     const result = await createListing(fd);
 
     expect(result).toEqual({ error: "Format de photo invalide." });
-    expect(upload).not.toHaveBeenCalled();
+    expect(blobPut).not.toHaveBeenCalled();
     expect(insert).not.toHaveBeenCalled();
   });
 
@@ -238,7 +247,7 @@ describe("createListing()", () => {
     const result = await createListing(fd);
 
     expect(result).toEqual({ error: "Photo trop volumineuse (max 5 Mo)." });
-    expect(upload).not.toHaveBeenCalled();
+    expect(blobPut).not.toHaveBeenCalled();
     expect(insert).not.toHaveBeenCalled();
   });
 
@@ -257,18 +266,19 @@ describe("createListing()", () => {
     const result = await createListing(fd);
 
     expect(result).toEqual({ error: "Maximum 10 photos." });
-    expect(upload).not.toHaveBeenCalled();
+    expect(blobPut).not.toHaveBeenCalled();
     expect(insert).not.toHaveBeenCalled();
   });
 
-  it("removes already-uploaded photos when a later upload fails", async () => {
+  it("deletes already-uploaded blobs when a later upload fails", async () => {
     getUser.mockResolvedValue({
       data: { user: { id: "user-7" } },
       error: null,
     });
-    upload
-      .mockResolvedValueOnce({ data: { path: "ok" }, error: null })
-      .mockResolvedValueOnce({ data: null, error: { message: "boom" } });
+    const url1 = `${BLOB_BASE}/annonce/first.jpg`;
+    blobPut
+      .mockResolvedValueOnce({ url: url1, pathname: "annonce/first.jpg", downloadUrl: url1, contentType: "image/jpeg", contentDisposition: "inline" })
+      .mockRejectedValueOnce(new Error("blob error"));
     const { createListing } = await import("./actions");
 
     const fd = validFormData();
@@ -278,19 +288,22 @@ describe("createListing()", () => {
     const result = await createListing(fd);
 
     expect(result).toEqual({ error: "Impossible d'envoyer les photos." });
-    expect(remove).toHaveBeenCalledTimes(1);
-    const removedPaths = remove.mock.calls[0][0] as string[];
-    expect(removedPaths).toHaveLength(1);
-    expect(removedPaths[0]).toMatch(/^user-7\/.+\.jpg$/);
+    expect(blobDel).toHaveBeenCalledTimes(1);
+    expect(blobDel).toHaveBeenCalledWith([url1], expect.any(Object));
     expect(insert).not.toHaveBeenCalled();
   });
 
-  it("removes uploaded photos when the database insert fails", async () => {
+  it("deletes uploaded blobs when the database insert fails", async () => {
     getUser.mockResolvedValue({
       data: { user: { id: "user-7" } },
       error: null,
     });
     insert.mockResolvedValue({ error: { message: "boom" } });
+    const url1 = `${BLOB_BASE}/annonce/a.jpg`;
+    const url2 = `${BLOB_BASE}/annonce/b.png`;
+    blobPut
+      .mockResolvedValueOnce({ url: url1, pathname: "annonce/a.jpg", downloadUrl: url1, contentType: "image/jpeg", contentDisposition: "inline" })
+      .mockResolvedValueOnce({ url: url2, pathname: "annonce/b.png", downloadUrl: url2, contentType: "image/png", contentDisposition: "inline" });
     const { createListing } = await import("./actions");
 
     const fd = validFormData();
@@ -300,9 +313,8 @@ describe("createListing()", () => {
     const result = await createListing(fd);
 
     expect(result).toEqual({ error: "Impossible de créer l'annonce." });
-    expect(remove).toHaveBeenCalledTimes(1);
-    const removedPaths = remove.mock.calls[0][0] as string[];
-    expect(removedPaths).toHaveLength(2);
+    expect(blobDel).toHaveBeenCalledTimes(1);
+    expect(blobDel).toHaveBeenCalledWith([url1, url2], expect.any(Object));
   });
 });
 

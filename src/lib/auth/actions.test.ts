@@ -37,7 +37,7 @@ describe("login()", () => {
       email: "alice@example.com",
       password: "s3cret!",
     });
-    expect(redirect).toHaveBeenCalledWith("/");
+    expect(redirect).toHaveBeenCalledWith("/annonces");
   });
 
   it("rejects malformed input without calling Supabase", async () => {
@@ -101,7 +101,7 @@ describe("signup()", () => {
       password: "secret12",
       options: { data: { full_name: "Alice Martin" } },
     });
-    expect(redirect).toHaveBeenCalledWith("/");
+    expect(redirect).toHaveBeenCalledWith("/annonces");
   });
 
   it("rejects malformed input without calling Supabase", async () => {

@@ -14,16 +14,14 @@ const priceFormatter = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 0,
 });
 
-const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/$/, "");
-
 export function PublicListingCard({ listing }: { listing: PublicListingSummary }) {
-  const firstPhotoPath =
+  const firstPhoto =
     Array.isArray(listing.photos) && listing.photos.length > 0
       ? String(listing.photos[0])
       : null;
 
-  const photoUrl = firstPhotoPath
-    ? `${supabaseUrl}/storage/v1/object/public/listings/${firstPhotoPath}`
+  const photoUrl = firstPhoto
+    ? `/api/photo?url=${encodeURIComponent(firstPhoto)}`
     : null;
 
   return (
@@ -34,8 +32,8 @@ export function PublicListingCard({ listing }: { listing: PublicListingSummary }
             src={photoUrl}
             alt={listing.title}
             fill
+            unoptimized
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 25vw"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
