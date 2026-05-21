@@ -85,6 +85,31 @@ export async function createListing(formData: FormData) {
   redirect("/");
 }
 
+
+export async function updateListing(id: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const title = formData.get("title") as string;
+  // On force le type pour correspondre exactement aux attentes de la base de données
+  const type = formData.get("type") as "maison" | "appartement";
+  const city = formData.get("city") as string;
+  const surface = parseInt(formData.get("surface") as string, 10);
+  const rooms = parseInt(formData.get("rooms") as string, 10);
+  const price = parseInt(formData.get("price") as string, 10);
+
+  const { error } = await supabase
+    .from("listings")
+    .update({ title, type, city, surface, rooms, price })
+    .eq("id", id);
+
+  if (error) {
+    return { error: "Erreur lors de la mise à jour de l'annonce." };
+  }
+
+  revalidatePath("/mes-annonces");
+  redirect("/mes-annonces");
+}
+
 function extensionOf(filename: string): string {
   const dot = filename.lastIndexOf(".");
   if (dot <= 0 || dot === filename.length - 1) return "";

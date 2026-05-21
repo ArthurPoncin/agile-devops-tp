@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { DeleteListingDialog } from "@/components/listings/delete-listing-dialog";
 import { deleteListing } from "@/lib/listings/actions";
 import type { Listing, ListingStatus } from "@/lib/supabase/database.types";
@@ -32,6 +34,13 @@ export function ListingCard({ listing }: { listing: ListingSummary }) {
         <Badge variant={listing.status === "active" ? "default" : "secondary"}>
           {statusLabels[listing.status]}
         </Badge>
+        
+        <Link href={`/listings/${listing.id}/edit`} passHref>
+          <Button variant="outline" size="sm">
+            Modifier
+          </Button>
+        </Link>
+
         <DeleteListingDialog listingId={listing.id} action={deleteListing} />
       </div>
     </article>
