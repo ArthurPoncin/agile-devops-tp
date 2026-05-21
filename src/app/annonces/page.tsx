@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   PublicListingCard,
@@ -72,6 +73,10 @@ export default async function AnnoncesPage({ searchParams }: Props) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
 
   let query = supabase
     .from("listings")

@@ -20,8 +20,9 @@ const getPublicUrl = vi.fn();
 const storageFrom = vi.fn(() => ({ getPublicUrl }));
 
 const notFound = vi.fn<() => never>();
+const redirect = vi.fn<(path: string) => never>();
 
-const getUser = vi.fn().mockResolvedValue({ data: { user: null } });
+const getUser = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
@@ -33,6 +34,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("next/navigation", () => ({
   notFound: () => notFound(),
+  redirect: (path: string) => redirect(path),
 }));
 
 beforeEach(() => {
@@ -45,9 +47,15 @@ beforeEach(() => {
   from.mockClear();
   getPublicUrl.mockReset();
   storageFrom.mockClear();
+  getUser.mockReset();
+  getUser.mockResolvedValue({ data: { user: { id: "u1", email: "alice@example.com" } } });
   notFound.mockReset();
   notFound.mockImplementation(() => {
     throw new Error("__NOT_FOUND__");
+  });
+  redirect.mockReset();
+  redirect.mockImplementation((path) => {
+    throw new Error(`__REDIRECT__:${path}`);
   });
 
   profileSingle.mockResolvedValue({
@@ -74,6 +82,18 @@ const baseListing = {
 };
 
 describe("ListingDetailPage", () => {
+  it("redirects to /login when no user is signed in", async () => {
+    getUser.mockResolvedValue({ data: { user: null } });
+    const { default: Page } = await import("./page");
+
+    await expect(
+      Page({ params: Promise.resolve({ id: LISTING_ID }) }),
+    ).rejects.toThrow("__REDIRECT__:/login");
+
+    expect(redirect).toHaveBeenCalledWith("/login");
+    expect(from).not.toHaveBeenCalled();
+  });
+
   it("renders the listing title for a valid id", async () => {
     listingSingle.mockResolvedValue({ data: baseListing, error: null });
     const { default: Page } = await import("./page");

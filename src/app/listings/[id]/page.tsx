@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { Listing, ListingType } from "@/lib/supabase/database.types";
@@ -32,6 +32,10 @@ export default async function ListingDetailPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
 
   const { data: listingData } = await supabase
     .from("listings")
