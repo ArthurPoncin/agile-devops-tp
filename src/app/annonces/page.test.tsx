@@ -19,10 +19,15 @@ order.mockReturnValue(builder);
 select.mockReturnValue(builder);
 from.mockReturnValue({ select });
 
-const getUser = vi.fn().mockResolvedValue({ data: { user: null } });
+const getUser = vi.fn();
+const redirect = vi.fn<(path: string) => never>();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({ from, auth: { getUser } })),
+}));
+
+vi.mock("next/navigation", () => ({
+  redirect: (path: string) => redirect(path),
 }));
 
 function mockRange(result = { data: [], count: 0, error: null }) {
@@ -39,9 +44,27 @@ beforeEach(() => {
   from.mockClear();
   range.mockReset();
   mockRange();
+  getUser.mockReset();
+  getUser.mockResolvedValue({ data: { user: { id: "u1", email: "alice@example.com" } } });
+  redirect.mockReset();
+  redirect.mockImplementation((path) => {
+    throw new Error(`__REDIRECT__:${path}`);
+  });
 });
 
 describe("AnnoncesPage filters", () => {
+  it("redirects to /login when no user is signed in", async () => {
+    getUser.mockResolvedValue({ data: { user: null } });
+    const { default: Page } = await import("./page");
+
+    await expect(
+      Page({ searchParams: Promise.resolve({}) }),
+    ).rejects.toThrow("__REDIRECT__:/login");
+
+    expect(redirect).toHaveBeenCalledWith("/login");
+    expect(from).not.toHaveBeenCalled();
+  });
+
   it("applies an ilike on city when the city searchParam is set", async () => {
     const { default: Page } = await import("./page");
 
