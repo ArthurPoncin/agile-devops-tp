@@ -30,7 +30,9 @@ export default async function ListingDetailPage({
   const supabase = await createClient();
   const { data: listing } = await supabase
     .from("listings")
-    .select("*")
+    .select(
+      "id, owner_id, title, type, city, surface, rooms, price, description, photos",
+    )
     .eq("id", id)
     .single();
 
@@ -112,7 +114,7 @@ export default async function ListingDetailPage({
         <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-muted-foreground">Nom</dt>
-            <dd>{owner?.full_name}</dd>
+            <dd>{owner?.full_name?.trim() ? owner.full_name : "Non renseigné"}</dd>
           </div>
           <div>
             <dt className="text-muted-foreground">Téléphone</dt>

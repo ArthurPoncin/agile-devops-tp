@@ -177,6 +177,32 @@ describe("ListingDetailPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders 'Non renseigné' when the seller's full_name is null", async () => {
+    listingSingle.mockResolvedValue({ data: baseListing, error: null });
+    profileSingle.mockResolvedValue({
+      data: { full_name: null, phone: "0612345678" },
+      error: null,
+    });
+    const { default: Page } = await import("./page");
+
+    render(await Page({ params: Promise.resolve({ id: LISTING_ID }) }));
+
+    expect(screen.getByText(/non renseigné/i)).toBeInTheDocument();
+  });
+
+  it("renders 'Non renseigné' when the seller's full_name is only whitespace", async () => {
+    listingSingle.mockResolvedValue({ data: baseListing, error: null });
+    profileSingle.mockResolvedValue({
+      data: { full_name: "   ", phone: "0612345678" },
+      error: null,
+    });
+    const { default: Page } = await import("./page");
+
+    render(await Page({ params: Promise.resolve({ id: LISTING_ID }) }));
+
+    expect(screen.getByText(/non renseigné/i)).toBeInTheDocument();
+  });
+
   it("renders 'Non renseigné' when the seller's phone is null", async () => {
     listingSingle.mockResolvedValue({ data: baseListing, error: null });
     profileSingle.mockResolvedValue({
