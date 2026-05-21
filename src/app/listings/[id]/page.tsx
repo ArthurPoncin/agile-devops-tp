@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import type { ListingType } from "@/lib/supabase/database.types";
+import type { Listing, ListingType } from "@/lib/supabase/database.types";
+import { FavoriteButton } from "@/components/listings/favorite-button";
 
 const idSchema = z.string().uuid();
 
@@ -28,17 +29,37 @@ export default async function ListingDetailPage({
   }
 
   const supabase = await createClient();
-  const { data: listing } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: listingData } = await supabase
     .from("listings")
     .select(
-      "id, owner_id, title, type, city, surface, rooms, price, description, photos",
+      `id, owner_id, title, type, city, surface, rooms, price, description, photos,
+       favorites(user_id)`,
     )
     .eq("id", id)
+    .eq("favorites.user_id", user?.id ?? "00000000-0000-0000-0000-000000000000")
     .single();
 
-  if (!listing) {
+  if (!listingData) {
     notFound();
   }
+
+  const listing = listingData as Listing & { favorites: { user_id: string }[] };
+  const isFavorite = Array.isArray(listing.favorites) && listing.favorites.length > 0;
+
+  const photoPaths = Array.isArray(listing.photos)
+    ? listing.photos.filter((p): p is string => typeof p === "string")
+    : [];
+
+  const photoUrls = photoPaths.map((path) => ({
+    path,
+    url: path.startsWith("https://")
+      ? `/api/photo?url=${encodeURIComponent(path)}`
+      : supabase.storage.from("listings").getPublicUrl(path).data.publicUrl,
+  }));
 
   const { data: owner } = await supabase
     .from("profiles")
@@ -46,21 +67,18 @@ export default async function ListingDetailPage({
     .eq("id", listing.owner_id)
     .single();
 
-  const photoPaths = Array.isArray(listing.photos)
-    ? listing.photos.filter((p): p is string => typeof p === "string")
-    : [];
-  const photoUrls = photoPaths.map((path) => ({
-    path,
-    url: /^https?:\/\//.test(path)
-      ? path
-      : supabase.storage.from("listings").getPublicUrl(path).data.publicUrl,
-  }));
-
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10 space-y-8">
-      <h1 className="text-2xl font-semibold tracking-tight">{listing.title}</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight">{listing.title}</h1>
+        <FavoriteButton
+          listingId={listing.id}
+          initialIsFavorite={isFavorite}
+          hasUser={!!user}
+        />
+      </div>
 
-      {photoUrls.length > 0 ? (
+      {photoUrls.length > 0 && (
         <section className="space-y-3">
           <h2 className="sr-only">Photos</h2>
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -76,7 +94,7 @@ export default async function ListingDetailPage({
             ))}
           </ul>
         </section>
-      ) : null}
+      )}
 
       <section className="space-y-3">
         <h2 className="text-lg font-medium">Caractéristiques</h2>

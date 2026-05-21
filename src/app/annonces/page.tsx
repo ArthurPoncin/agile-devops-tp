@@ -3,6 +3,7 @@ import {
   PublicListingCard,
   type PublicListingSummary,
 } from "@/components/listings/public-listing-card";
+import { FavoriteButton } from "@/components/listings/favorite-button";
 import { ListingFilters } from "@/components/listings/listing-filters";
 import {
   Pagination,
@@ -70,10 +71,14 @@ export default async function AnnoncesPage({ searchParams }: Props) {
 
   const supabase = await createClient();
 
+  const { data: { user } } = await supabase.auth.getUser();
+ 
   let query = supabase
     .from("listings")
-    .select("id, title, city, price, surface, photos", { count: "exact" })
-    .eq("status", "active");
+    .select("id, title, city, price, surface, photos, description", { count: "exact" })
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   if (trimmedCity) query = query.ilike("city", `%${trimmedCity}%`);
   if (validType) query = query.eq("type", validType);
@@ -83,11 +88,28 @@ export default async function AnnoncesPage({ searchParams }: Props) {
   if (surfaceMax !== null) query = query.lte("surface", surfaceMax);
   if (rooms !== null) query = query.gte("rooms", rooms);
 
-  const { data, count, error } = await query
-    .order("created_at", { ascending: false })
-    .range(from, to);
+  const { data, count, error } = await supabase
+  .from("listings")
+  .select(`
+    id, title, city, price, surface, photos,
+    favorites(user_id)
+  `, { count: "exact" })
+  .eq("status", "active")
+  .eq("favorites.user_id", user?.id ?? "00000000-0000-0000-0000-000000000000")
+  .order("created_at", { ascending: false })
+  .range(from, to);
 
-  const listings = (data ?? []) as PublicListingSummary[];
+  interface ListingWithFavorite {
+  id: string;
+  title: string;
+  city: string;
+  price: number;
+  surface: number;
+  photos: any;
+  favorites: { user_id: string }[];
+  }
+
+  const listings = (data ?? []) as any[];
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE);
 
   const filterParams: Record<string, string | null> = {
@@ -141,11 +163,22 @@ export default async function AnnoncesPage({ searchParams }: Props) {
       ) : (
         <>
           <ul className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {listings.map((listing) => (
-              <li key={listing.id}>
-                <PublicListingCard listing={listing} />
-              </li>
-            ))}
+            {listings.map((listing) => {
+              const isFavorite = Array.isArray(listing.favorites) && listing.favorites.length > 0;
+
+              return (
+                <li key={listing.id} className="relative">
+                  <PublicListingCard listing={listing} />
+                  <div className="absolute right-3 top-3 z-10">
+                    <FavoriteButton 
+                      listingId={listing.id} 
+                      initialIsFavorite={isFavorite} 
+                      hasUser={!!user} 
+                    />
+                  </div>
+                </li>
+              );
+            })}
           </ul>
 
           {totalPages > 1 && (

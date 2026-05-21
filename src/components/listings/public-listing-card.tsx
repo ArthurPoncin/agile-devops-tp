@@ -6,7 +6,7 @@ import type { Listing } from "@/lib/supabase/database.types";
 
 export type PublicListingSummary = Pick<
   Listing,
-  "id" | "title" | "city" | "price" | "surface" | "photos"
+  "id" | "title" | "city" | "price" | "surface" | "photos" | "description"
 >;
 
 const priceFormatter = new Intl.NumberFormat("fr-FR", {
@@ -49,6 +49,9 @@ export function PublicListingCard({ listing }: { listing: PublicListingSummary }
             <MapPin className="size-3.5 shrink-0" />
             {listing.city}
           </p>
+          {listing.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2">{listing.description}</p>
+          )}
           <div className="flex items-center justify-between mt-auto pt-2 border-t">
             <span className="text-lg font-bold">{priceFormatter.format(listing.price)}</span>
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
