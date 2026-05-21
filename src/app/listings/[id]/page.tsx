@@ -45,6 +45,15 @@ if (!listingData) {
 }
 
 const listing = listingData as Listing & { favorites: { user_id: string }[] };
+const photoPaths = Array.isArray(listing.photos)
+    ? listing.photos.filter((p): p is string => typeof p === "string")
+    : [];
+const photoUrls = photoPaths.map((path) => ({
+    path,
+    url: /^https?:\/\//.test(path)
+      ? path
+      : supabase.storage.from("listings").getPublicUrl(path).data.publicUrl,
+}));
 
 const isFavorite = Array.isArray(listing.favorites) && listing.favorites.length > 0;
 
