@@ -19,8 +19,10 @@ order.mockReturnValue(builder);
 select.mockReturnValue(builder);
 from.mockReturnValue({ select });
 
+const getUser = vi.fn(async () => ({ data: { user: null } }));
+
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: vi.fn(async () => ({ from })),
+  createClient: vi.fn(async () => ({ from, auth: { getUser } })),
 }));
 
 beforeEach(() => {
