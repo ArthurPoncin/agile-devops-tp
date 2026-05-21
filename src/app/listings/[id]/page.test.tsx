@@ -6,7 +6,7 @@ const OWNER_ID = "22222222-2222-4222-8222-222222222222";
 
 const listingSingle = vi.fn();
 const profileSingle = vi.fn();
-const listingEq = vi.fn(() => ({ single: listingSingle }));
+const listingEq: ReturnType<typeof vi.fn> = vi.fn(() => ({ eq: listingEq, single: listingSingle }));
 const profileEq = vi.fn(() => ({ single: profileSingle }));
 const listingSelect = vi.fn(() => ({ eq: listingEq }));
 const profileSelect = vi.fn(() => ({ eq: profileEq }));
@@ -21,10 +21,13 @@ const storageFrom = vi.fn(() => ({ getPublicUrl }));
 
 const notFound = vi.fn<() => never>();
 
+const getUser = vi.fn().mockResolvedValue({ data: { user: null } });
+
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
     from,
     storage: { from: storageFrom },
+    auth: { getUser },
   })),
 }));
 

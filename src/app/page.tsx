@@ -21,9 +21,9 @@ export default async function HomePage() {
     redirect("/annonces");
   }
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("listings")
-    .select("id, title, city, price, surface, photos")
+    .select("id, title, city, price, surface, photos, description")
     .eq("status", "active")
     .order("created_at", { ascending: false })
     .limit(SHOWCASE_LIMIT);
@@ -112,7 +112,11 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        {listings.length === 0 ? (
+        {error ? (
+          <p role="alert" className="text-sm text-destructive">
+            Impossible de charger les annonces. Réessayez plus tard.
+          </p>
+        ) : listings.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Aucune annonce disponible pour le moment.
           </p>
