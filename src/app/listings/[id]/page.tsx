@@ -114,11 +114,11 @@ export default async function ListingDetailPage({
         <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-muted-foreground">Nom</dt>
-            <dd>{owner?.full_name?.trim() ? owner.full_name : "Non renseigné"}</dd>
+            <dd>{owner?.full_name?.trim() || "Non renseigné"}</dd>
           </div>
           <div>
             <dt className="text-muted-foreground">Téléphone</dt>
-            <dd>{owner?.phone?.trim() ? owner.phone : "Non renseigné"}</dd>
+            <dd>{owner?.phone?.trim() || "Non renseigné"}</dd>
           </div>
         </dl>
       </section>

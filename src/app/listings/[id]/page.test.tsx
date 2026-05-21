@@ -229,6 +229,30 @@ describe("ListingDetailPage", () => {
     expect(screen.getByText(/non renseigné/i)).toBeInTheDocument();
   });
 
+  it("trims leading/trailing whitespace when rendering the seller's name and phone", async () => {
+    listingSingle.mockResolvedValue({ data: baseListing, error: null });
+    profileSingle.mockResolvedValue({
+      data: { full_name: "  Alice Martin  ", phone: "  0612345678  " },
+      error: null,
+    });
+    const { default: Page } = await import("./page");
+
+    render(await Page({ params: Promise.resolve({ id: LISTING_ID }) }));
+
+    expect(screen.getByText("Alice Martin")).toBeInTheDocument();
+    expect(screen.getByText("0612345678")).toBeInTheDocument();
+  });
+
+  it("renders 'Non renseigné' for both seller fields when the owner profile is null", async () => {
+    listingSingle.mockResolvedValue({ data: baseListing, error: null });
+    profileSingle.mockResolvedValue({ data: null, error: null });
+    const { default: Page } = await import("./page");
+
+    render(await Page({ params: Promise.resolve({ id: LISTING_ID }) }));
+
+    expect(screen.getAllByText(/non renseigné/i)).toHaveLength(2);
+  });
+
   it("renders one image per photo using public URLs resolved from the storage bucket", async () => {
     listingSingle.mockResolvedValue({
       data: { ...baseListing, photos: ["owner/abc.jpg", "owner/def.png"] },
@@ -253,6 +277,19 @@ describe("ListingDetailPage", () => {
   it("does not render any image and does not call storage when the listing has no photos", async () => {
     listingSingle.mockResolvedValue({
       data: { ...baseListing, photos: [] },
+      error: null,
+    });
+    const { default: Page } = await import("./page");
+
+    render(await Page({ params: Promise.resolve({ id: LISTING_ID }) }));
+
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(storageFrom).not.toHaveBeenCalled();
+  });
+
+  it("does not render any image when photos is not an array (e.g. null Json)", async () => {
+    listingSingle.mockResolvedValue({
+      data: { ...baseListing, photos: null },
       error: null,
     });
     const { default: Page } = await import("./page");
