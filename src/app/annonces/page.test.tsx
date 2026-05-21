@@ -30,7 +30,7 @@ vi.mock("next/navigation", () => ({
   redirect: (path: string) => redirect(path),
 }));
 
-function mockRange(result = { data: [], count: 0, error: null }) {
+function mockRange(result: { data: unknown[]; count: number; error: unknown } = { data: [], count: 0, error: null }) {
   range.mockReturnValue(Object.assign(Promise.resolve(result), builder));
 }
 
