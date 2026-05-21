@@ -61,9 +61,11 @@ export function ProfileForm({
           id="phone"
           name="phone"
           type="tel"
+          inputMode="numeric"
           autoComplete="tel"
           defaultValue={initialProfile.phone}
-          placeholder="06 12 34 56 78"
+          placeholder="0612345678"
+          required
         />
       </div>
       {state && "error" in state ? (
