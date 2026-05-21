@@ -104,15 +104,19 @@ export function ListingForm({ action, initialData }: ListingFormProps) {
           />
         </div>
       </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="photos">Photos</Label>
-        <Input id="photos" name="photos" type="file" accept="image/*" multiple />
-      </div>
+      {!isEdit && (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="photos">Photos</Label>
+          <Input id="photos" name="photos" type="file" accept="image/*" multiple />
+        </div>
+      )}
+
       {state?.error ? (
         <p role="alert" className="text-sm text-destructive">
           {state.error}
         </p>
       ) : null}
+
       <Button type="submit" disabled={pending}>
         {isEdit ? "Enregistrer les modifications" : "Publier l'annonce"}
       </Button>

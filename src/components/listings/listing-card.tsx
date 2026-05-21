@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DeleteListingDialog } from "@/components/listings/delete-listing-dialog";
 import { deleteListing } from "@/lib/listings/actions";
 import type { Listing, ListingStatus } from "@/lib/supabase/database.types";
+import { buttonVariants } from "@/components/ui/button";
 
 export type ListingSummary = Pick<
   Listing,
@@ -35,10 +36,11 @@ export function ListingCard({ listing }: { listing: ListingSummary }) {
           {statusLabels[listing.status]}
         </Badge>
         
-        <Link href={`/listings/${listing.id}/edit`} passHref>
-          <Button variant="outline" size="sm">
-            Modifier
-          </Button>
+        <Link
+          href={`/listings/${listing.id}/edit`}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          Modifier
         </Link>
 
         <DeleteListingDialog listingId={listing.id} action={deleteListing} />

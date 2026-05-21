@@ -89,21 +89,46 @@ export async function createListing(formData: FormData) {
 export async function updateListing(id: string, formData: FormData) {
   const supabase = await createClient();
 
-  const title = formData.get("title") as string;
-  // On force le type pour correspondre exactement aux attentes de la base de données
-  const type = formData.get("type") as "maison" | "appartement";
-  const city = formData.get("city") as string;
-  const surface = parseInt(formData.get("surface") as string, 10);
-  const rooms = parseInt(formData.get("rooms") as string, 10);
-  const price = parseInt(formData.get("price") as string, 10);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const { error } = await supabase
+  if (!user) {
+    return { error: "Modification impossible. Vous devez être connecté." };
+  }
+
+  const parsed = listingCreateSchema.safeParse({
+    title: formData.get("title"),
+    type: formData.get("type"),
+    city: formData.get("city"),
+    surface: formData.get("surface"),
+    rooms: formData.get("rooms"),
+    price: formData.get("price"),
+  });
+
+  if (!parsed.success) {
+    return { error: "Champs invalides." };
+  }
+
+  const { error, data } = await supabase
     .from("listings")
-    .update({ title, type, city, surface, rooms, price })
-    .eq("id", id);
+    .update({
+      title: parsed.data.title,
+      type: parsed.data.type,
+      city: parsed.data.city,
+      surface: parsed.data.surface,
+      rooms: parsed.data.rooms,
+      price: parsed.data.price,
+    })
+    .eq("id", id)
+    .eq("owner_id", user.id)
+    .select();
 
   if (error) {
     return { error: "Erreur lors de la mise à jour de l'annonce." };
+  }
+  if (!data || data.length === 0) {
+    return { error: "Modification impossible. Vous n'êtes pas le propriétaire." };
   }
 
   revalidatePath("/mes-annonces");
