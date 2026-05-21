@@ -99,7 +99,7 @@ describe("signup()", () => {
     expect(signUp).toHaveBeenCalledWith({
       email: "alice@example.com",
       password: "secret12",
-      options: { data: { name: "Alice Martin" } },
+      options: { data: { full_name: "Alice Martin" } },
     });
     expect(redirect).toHaveBeenCalledWith("/");
   });

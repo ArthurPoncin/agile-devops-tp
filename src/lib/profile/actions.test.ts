@@ -52,7 +52,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function validFormData(overrides: Partial<Record<string, string>> = {}) {
+function validFormData(overrides: Record<string, string> = {}) {
   const fd = new FormData();
   fd.set("full_name", "Alice Martin");
   fd.set("email", "alice@example.com");
