@@ -3,6 +3,7 @@ import {
   PublicListingCard,
   type PublicListingSummary,
 } from "@/components/listings/public-listing-card";
+import { ListingFilters } from "@/components/listings/listing-filters";
 import {
   Pagination,
   PaginationContent,
@@ -15,27 +16,98 @@ import {
 
 const PAGE_SIZE = 9;
 
+const VALID_TYPES = ["maison", "appartement"] as const;
+type ListingTypeFilter = (typeof VALID_TYPES)[number];
+
+function isValidType(value: string | undefined): value is ListingTypeFilter {
+  return (
+    typeof value === "string" &&
+    (VALID_TYPES as readonly string[]).includes(value)
+  );
+}
+
+function parsePositiveInt(raw: string | undefined): number | null {
+  if (!raw || !/^\d+$/.test(raw)) return null;
+  const n = Number(raw);
+  return n > 0 ? n : null;
+}
+
 type Props = {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    city?: string;
+    type?: string;
+    priceMin?: string;
+    priceMax?: string;
+    surfaceMin?: string;
+    surfaceMax?: string;
+    rooms?: string;
+  }>;
 };
 
 export default async function AnnoncesPage({ searchParams }: Props) {
-  const { page: pageParam } = await searchParams;
+  const {
+    page: pageParam,
+    city,
+    type,
+    priceMin: priceMinRaw,
+    priceMax: priceMaxRaw,
+    surfaceMin: surfaceMinRaw,
+    surfaceMax: surfaceMaxRaw,
+    rooms: roomsRaw,
+  } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
+  const trimmedCity = city?.trim() || null;
+  const validType = isValidType(type) ? type : null;
+  const priceMin = parsePositiveInt(priceMinRaw);
+  const priceMax = parsePositiveInt(priceMaxRaw);
+  const surfaceMin = parsePositiveInt(surfaceMinRaw);
+  const surfaceMax = parsePositiveInt(surfaceMaxRaw);
+  const rooms = parsePositiveInt(roomsRaw);
+
   const supabase = await createClient();
 
-  const { data, count, error } = await supabase
+  let query = supabase
     .from("listings")
     .select("id, title, city, price, surface, photos", { count: "exact" })
-    .eq("status", "active")
+    .eq("status", "active");
+
+  if (trimmedCity) query = query.ilike("city", `%${trimmedCity}%`);
+  if (validType) query = query.eq("type", validType);
+  if (priceMin !== null) query = query.gte("price", priceMin);
+  if (priceMax !== null) query = query.lte("price", priceMax);
+  if (surfaceMin !== null) query = query.gte("surface", surfaceMin);
+  if (surfaceMax !== null) query = query.lte("surface", surfaceMax);
+  if (rooms !== null) query = query.gte("rooms", rooms);
+
+  const { data, count, error } = await query
     .order("created_at", { ascending: false })
     .range(from, to);
 
   const listings = (data ?? []) as PublicListingSummary[];
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE);
+
+  const filterParams: Record<string, string | null> = {
+    city: trimmedCity,
+    type: validType,
+    priceMin: priceMin?.toString() ?? null,
+    priceMax: priceMax?.toString() ?? null,
+    surfaceMin: surfaceMin?.toString() ?? null,
+    surfaceMax: surfaceMax?.toString() ?? null,
+    rooms: rooms?.toString() ?? null,
+  };
+
+  function pageHref(targetPage: number): string {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filterParams)) {
+      if (value) params.set(key, value);
+    }
+    params.set("page", targetPage.toString());
+    return `/annonces?${params.toString()}`;
+  }
 
   return (
     <main className="mx-auto w-full max-w-7xl px-6 py-10 space-y-8">
@@ -47,6 +119,18 @@ export default async function AnnoncesPage({ searchParams }: Props) {
           </span>
         )}
       </div>
+
+      <ListingFilters
+        values={{
+          city: trimmedCity ?? "",
+          type: validType ?? "",
+          priceMin: priceMin?.toString() ?? "",
+          priceMax: priceMax?.toString() ?? "",
+          surfaceMin: surfaceMin?.toString() ?? "",
+          surfaceMax: surfaceMax?.toString() ?? "",
+          rooms: rooms?.toString() ?? "",
+        }}
+      />
 
       {error ? (
         <p role="alert" className="text-sm text-destructive">
@@ -70,7 +154,7 @@ export default async function AnnoncesPage({ searchParams }: Props) {
                 {page > 1 && (
                   <PaginationItem>
                     <PaginationPrevious
-                      href={`/annonces?page=${page - 1}`}
+                      href={pageHref(page - 1)}
                       text="Précédent"
                     />
                   </PaginationItem>
@@ -98,7 +182,7 @@ export default async function AnnoncesPage({ searchParams }: Props) {
                     ) : (
                       <PaginationItem key={item}>
                         <PaginationLink
-                          href={`/annonces?page=${item}`}
+                          href={pageHref(item)}
                           isActive={item === page}
                         >
                           {item}
@@ -110,7 +194,7 @@ export default async function AnnoncesPage({ searchParams }: Props) {
                 {page < totalPages && (
                   <PaginationItem>
                     <PaginationNext
-                      href={`/annonces?page=${page + 1}`}
+                      href={pageHref(page + 1)}
                       text="Suivant"
                     />
                   </PaginationItem>

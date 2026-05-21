@@ -51,7 +51,9 @@ export default async function ListingDetailPage({
     : [];
   const photoUrls = photoPaths.map((path) => ({
     path,
-    url: supabase.storage.from("listings").getPublicUrl(path).data.publicUrl,
+    url: /^https?:\/\//.test(path)
+      ? path
+      : supabase.storage.from("listings").getPublicUrl(path).data.publicUrl,
   }));
 
   return (
