@@ -45,11 +45,12 @@ export default async function ListingDetailPage({
     .single();
 
   const photoPaths = Array.isArray(listing.photos)
-    ? (listing.photos.filter((p): p is string => typeof p === "string"))
+    ? listing.photos.filter((p): p is string => typeof p === "string")
     : [];
-  const photoUrls = photoPaths.map(
-    (path) => supabase.storage.from("listings").getPublicUrl(path).data.publicUrl,
-  );
+  const photoUrls = photoPaths.map((path) => ({
+    path,
+    url: supabase.storage.from("listings").getPublicUrl(path).data.publicUrl,
+  }));
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10 space-y-8">
@@ -59,8 +60,8 @@ export default async function ListingDetailPage({
         <section className="space-y-3">
           <h2 className="sr-only">Photos</h2>
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {photoUrls.map((url, index) => (
-              <li key={url} className="overflow-hidden rounded-md border">
+            {photoUrls.map(({ path, url }, index) => (
+              <li key={path} className="overflow-hidden rounded-md border">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={url}
