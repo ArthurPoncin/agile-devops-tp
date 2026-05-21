@@ -27,9 +27,9 @@ function isValidType(value: string | undefined): value is ListingTypeFilter {
 }
 
 function parsePositiveInt(raw: string | undefined): number | null {
-  if (!raw) return null;
-  const n = parseInt(raw, 10);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  if (!raw || !/^\d+$/.test(raw)) return null;
+  const n = Number(raw);
+  return n > 0 ? n : null;
 }
 
 type Props = {
@@ -122,13 +122,13 @@ export default async function AnnoncesPage({ searchParams }: Props) {
 
       <ListingFilters
         values={{
-          city,
-          type,
-          priceMin: priceMinRaw,
-          priceMax: priceMaxRaw,
-          surfaceMin: surfaceMinRaw,
-          surfaceMax: surfaceMaxRaw,
-          rooms: roomsRaw,
+          city: trimmedCity ?? "",
+          type: validType ?? "",
+          priceMin: priceMin?.toString() ?? "",
+          priceMax: priceMax?.toString() ?? "",
+          surfaceMin: surfaceMin?.toString() ?? "",
+          surfaceMax: surfaceMax?.toString() ?? "",
+          rooms: rooms?.toString() ?? "",
         }}
       />
 

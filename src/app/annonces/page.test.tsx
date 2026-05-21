@@ -117,6 +117,22 @@ describe("AnnoncesPage filters", () => {
     expect(lte).not.toHaveBeenCalledWith("price", expect.anything());
   });
 
+  it("ignores partially-numeric values like '3abc' for numeric filters", async () => {
+    const { default: Page } = await import("./page");
+
+    render(
+      await Page({
+        searchParams: Promise.resolve({
+          priceMin: "150000abc",
+          rooms: "3xyz",
+        }),
+      }),
+    );
+
+    expect(gte).not.toHaveBeenCalledWith("price", expect.anything());
+    expect(gte).not.toHaveBeenCalledWith("rooms", expect.anything());
+  });
+
   it("applies gte/lte on surface when surfaceMin / surfaceMax are set", async () => {
     const { default: Page } = await import("./page");
 
@@ -259,5 +275,32 @@ describe("AnnoncesPage filters", () => {
     expect(screen.getByLabelText(/surface min/i)).toHaveValue(40);
     expect(screen.getByLabelText(/surface max/i)).toHaveValue(120);
     expect(screen.getByLabelText(/pièces/i)).toHaveValue(3);
+  });
+
+  it("does not echo invalid raw values back into the form inputs", async () => {
+    const { default: Page } = await import("./page");
+
+    render(
+      await Page({
+        searchParams: Promise.resolve({
+          type: "chateau",
+          priceMin: "150000abc",
+          rooms: "0",
+        }),
+      }),
+    );
+
+    expect(screen.getByLabelText(/type/i)).toHaveValue("");
+    expect(screen.getByLabelText(/prix min/i)).toHaveValue(null);
+    expect(screen.getByLabelText(/pièces/i)).toHaveValue(null);
+  });
+
+  it("renders a reset link pointing to /annonces with no filters", async () => {
+    const { default: Page } = await import("./page");
+
+    render(await Page({ searchParams: Promise.resolve({ city: "Nantes" }) }));
+
+    const resetLink = screen.getByRole("link", { name: /réinitialiser/i });
+    expect(resetLink).toHaveAttribute("href", "/annonces");
   });
 });

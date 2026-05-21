@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -108,10 +109,16 @@ export function ListingFilters({ values }: { values: ListingFiltersValues }) {
         />
       </div>
 
-      <div className="flex items-end">
-        <Button type="submit" className="w-full">
+      <div className="flex items-end gap-2">
+        <Button type="submit" className="flex-1">
           Rechercher
         </Button>
+        <Link
+          href="/annonces"
+          className={buttonVariants({ variant: "outline", className: "flex-1" })}
+        >
+          Réinitialiser
+        </Link>
       </div>
     </form>
   );
