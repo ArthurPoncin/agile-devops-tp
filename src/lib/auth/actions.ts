@@ -21,7 +21,7 @@ export async function login(formData: FormData) {
     return { error: "Email ou mot de passe incorrect." };
   }
 
-  redirect("/");
+  redirect("/annonces");
 }
 
 export async function logout() {
@@ -53,5 +53,5 @@ export async function signup(formData: FormData) {
     return { error: "Inscription impossible. Cet email est peut-être déjà utilisé." };
   }
 
-  redirect("/");
+  redirect("/annonces");
 }

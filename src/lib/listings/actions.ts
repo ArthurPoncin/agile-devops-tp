@@ -1,5 +1,6 @@
 "use server";
 
+import { put, del as blobDel } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -48,18 +49,22 @@ export async function createListing(formData: FormData) {
     }
   }
 
-  const uploadedPaths: string[] = [];
+  const uploadedUrls: string[] = [];
   for (const file of photoFiles) {
     const ext = extensionOf(file.name);
-    const path = `${user.id}/${crypto.randomUUID()}${ext}`;
-    const { error: uploadError } = await supabase.storage.from("listings").upload(path, file);
-    if (uploadError) {
-      if (uploadedPaths.length > 0) {
-        await supabase.storage.from("listings").remove(uploadedPaths);
+    const pathname = `annonce/${crypto.randomUUID()}${ext}`;
+    try {
+      const { url } = await put(pathname, file, {
+        access: "private",
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
+      uploadedUrls.push(url);
+    } catch {
+      if (uploadedUrls.length > 0) {
+        await blobDel(uploadedUrls, { token: process.env.BLOB_READ_WRITE_TOKEN });
       }
       return { error: "Impossible d'envoyer les photos." };
     }
-    uploadedPaths.push(path);
   }
 
   const payload: ListingInsert = {
@@ -70,14 +75,14 @@ export async function createListing(formData: FormData) {
     surface: parsed.data.surface,
     rooms: parsed.data.rooms,
     price: parsed.data.price,
-    photos: uploadedPaths,
+    photos: uploadedUrls,
     status: "active",
   };
   const { error } = await supabase.from("listings").insert(payload);
 
   if (error) {
-    if (uploadedPaths.length > 0) {
-      await supabase.storage.from("listings").remove(uploadedPaths);
+    if (uploadedUrls.length > 0) {
+      await blobDel(uploadedUrls, { token: process.env.BLOB_READ_WRITE_TOKEN });
     }
     return { error: "Impossible de créer l'annonce." };
   }
