@@ -85,6 +85,56 @@ export async function createListing(formData: FormData) {
   redirect("/");
 }
 
+
+export async function updateListing(id: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Modification impossible. Vous devez être connecté." };
+  }
+
+  const parsed = listingCreateSchema.safeParse({
+    title: formData.get("title"),
+    type: formData.get("type"),
+    city: formData.get("city"),
+    surface: formData.get("surface"),
+    rooms: formData.get("rooms"),
+    price: formData.get("price"),
+  });
+
+  if (!parsed.success) {
+    return { error: "Champs invalides." };
+  }
+
+  const { error, data } = await supabase
+    .from("listings")
+    .update({
+      title: parsed.data.title,
+      type: parsed.data.type,
+      city: parsed.data.city,
+      surface: parsed.data.surface,
+      rooms: parsed.data.rooms,
+      price: parsed.data.price,
+    })
+    .eq("id", id)
+    .eq("owner_id", user.id)
+    .select();
+
+  if (error) {
+    return { error: "Erreur lors de la mise à jour de l'annonce." };
+  }
+  if (!data || data.length === 0) {
+    return { error: "Modification impossible. Vous n'êtes pas le propriétaire." };
+  }
+
+  revalidatePath("/mes-annonces");
+  redirect("/mes-annonces");
+}
+
 function extensionOf(filename: string): string {
   const dot = filename.lastIndexOf(".");
   if (dot <= 0 || dot === filename.length - 1) return "";
