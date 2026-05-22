@@ -24,18 +24,36 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
 
 interface ListingCardProps {
   listing: ListingSummary;
-  supabase: any; // Requis pour générer l'URL de stockage de l'image
+  supabase: any; 
 }
 
 export function ListingCard({ listing, supabase }: ListingCardProps) {
-  // Extraction sûre du premier chemin d'image disponible
-  const photoPaths = Array.isArray(listing.photos)
-    ? listing.photos.filter((p): p is string => typeof p === "string")
-    : [];
+  let photoPaths: string[] = [];
+
+  if (Array.isArray(listing.photos)) {
+    photoPaths = listing.photos.filter((p): p is string => typeof p === "string");
+  } else if (typeof listing.photos === "string") {
+    try {
+      const parsed = JSON.parse(listing.photos);
+      if (Array.isArray(parsed)) {
+        photoPaths = parsed.filter((p): p is string => typeof p === "string");
+      } else {
+        photoPaths = [listing.photos];
+      }
+    } catch {
+      if (listing.photos.trim() !== "") {
+        photoPaths = [listing.photos];
+      }
+    }
+  }
   
-  const firstPhotoUrl = photoPaths.length > 0
-    ? supabase.storage.from("listings").getPublicUrl(photoPaths[0]).data.publicUrl
-    : null;
+  let firstPhotoUrl = null;
+  if (photoPaths.length > 0) {
+    const firstPath = photoPaths[0];
+    firstPhotoUrl = firstPath.startsWith("https://")
+      ? `/api/photo?url=${encodeURIComponent(firstPath)}`
+      : supabase.storage.from("listings").getPublicUrl(firstPath).data.publicUrl;
+  }
 
   return (
     <article className="flex gap-4 rounded-md border p-4 items-center justify-between">
