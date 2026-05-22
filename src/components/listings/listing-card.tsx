@@ -55,6 +55,7 @@ export function ListingCard({ listing, supabase }: ListingCardProps) {
       : supabase.storage.from("listings").getPublicUrl(firstPath).data.publicUrl;
   }
 
+
   return (
     <article className="flex gap-4 rounded-md border p-4 items-center justify-between">
       <div className="flex gap-4 items-center min-w-0 flex-1">
