@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
@@ -22,11 +22,43 @@ const selectClassName =
 
 const DEBOUNCE_MS = 400;
 
+const FILTER_KEYS = [
+  "city",
+  "type",
+  "priceMin",
+  "priceMax",
+  "surfaceMin",
+  "surfaceMax",
+  "rooms",
+] as const satisfies ReadonlyArray<keyof ListingFiltersValues>;
+
+function valuesToQuery(values: ListingFiltersValues): string {
+  const params = new URLSearchParams();
+  for (const key of FILTER_KEYS) {
+    const v = values[key]?.trim();
+    if (v) params.set(key, v);
+  }
+  return params.toString();
+}
+
 export function ListingFilters({ values }: { values: ListingFiltersValues }) {
   const router = useRouter();
-  const formRef = useRef<HTMLFormElement>(null);
+  const [filters, setFilters] = useState<ListingFiltersValues>(values);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastQueryRef = useRef<string | null>(null);
+  const lastSentQueryRef = useRef<string>(valuesToQuery(values));
+
+  // Sync local state when `values` change from outside the form (e.g.
+  // Réinitialiser navigation, browser back/forward). Skipped when the change
+  // matches what we just sent, so typing never disturbs the inputs.
+  const incomingQuery = valuesToQuery(values);
+  useEffect(() => {
+    if (incomingQuery !== lastSentQueryRef.current) {
+      lastSentQueryRef.current = incomingQuery;
+      setFilters(values);
+    }
+    // values is fully described by incomingQuery for our purposes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomingQuery]);
 
   useEffect(
     () => () => {
@@ -35,40 +67,33 @@ export function ListingFilters({ values }: { values: ListingFiltersValues }) {
     [],
   );
 
-  function scheduleSearch() {
+  function scheduleSearch(next: ListingFiltersValues) {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      if (!formRef.current) return;
-      const formData = new FormData(formRef.current);
-      const params = new URLSearchParams();
-      for (const [key, value] of formData.entries()) {
-        const v = String(value).trim();
-        if (v) params.set(key, v);
-      }
-      const query = params.toString();
-      if (query === lastQueryRef.current) return;
-      lastQueryRef.current = query;
+      const query = valuesToQuery(next);
+      if (query === lastSentQueryRef.current) return;
+      lastSentQueryRef.current = query;
       router.replace(query ? `/annonces?${query}` : "/annonces", {
         scroll: false,
       });
     }, DEBOUNCE_MS);
   }
 
-  // `key` forces a remount (and resets uncontrolled defaultValues) when the
-  // URL-derived filters change from outside the form — e.g. the user clicks
-  // "Réinitialiser" or navigates with browser back/forward.
-  const formKey = JSON.stringify(values);
+  function update<K extends keyof ListingFiltersValues>(key: K, value: string) {
+    setFilters((prev) => {
+      const next = { ...prev, [key]: value };
+      scheduleSearch(next);
+      return next;
+    });
+  }
 
   return (
     <form
-      key={formKey}
-      ref={formRef}
       method="get"
       role="search"
       aria-label="Filtres des annonces"
       className="rounded-xl border bg-card p-5 shadow-sm grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
       onSubmit={(e) => e.preventDefault()}
-      onChange={scheduleSearch}
     >
       <div className="flex flex-col gap-2">
         <Label htmlFor="city">Ville</Label>
@@ -76,7 +101,8 @@ export function ListingFilters({ values }: { values: ListingFiltersValues }) {
           id="city"
           name="city"
           type="text"
-          defaultValue={values.city ?? ""}
+          value={filters.city ?? ""}
+          onChange={(e) => update("city", e.target.value)}
           placeholder="Nantes"
         />
       </div>
@@ -86,7 +112,8 @@ export function ListingFilters({ values }: { values: ListingFiltersValues }) {
         <select
           id="type"
           name="type"
-          defaultValue={values.type ?? ""}
+          value={filters.type ?? ""}
+          onChange={(e) => update("type", e.target.value)}
           className={selectClassName}
         >
           <option value="">Tous</option>
@@ -103,7 +130,8 @@ export function ListingFilters({ values }: { values: ListingFiltersValues }) {
           type="number"
           min={1}
           step={1}
-          defaultValue={values.priceMin ?? ""}
+          value={filters.priceMin ?? ""}
+          onChange={(e) => update("priceMin", e.target.value)}
         />
       </div>
 
@@ -115,7 +143,8 @@ export function ListingFilters({ values }: { values: ListingFiltersValues }) {
           type="number"
           min={1}
           step={1}
-          defaultValue={values.priceMax ?? ""}
+          value={filters.priceMax ?? ""}
+          onChange={(e) => update("priceMax", e.target.value)}
         />
       </div>
 
@@ -127,7 +156,8 @@ export function ListingFilters({ values }: { values: ListingFiltersValues }) {
           type="number"
           min={1}
           step={1}
-          defaultValue={values.surfaceMin ?? ""}
+          value={filters.surfaceMin ?? ""}
+          onChange={(e) => update("surfaceMin", e.target.value)}
         />
       </div>
 
@@ -139,7 +169,8 @@ export function ListingFilters({ values }: { values: ListingFiltersValues }) {
           type="number"
           min={1}
           step={1}
-          defaultValue={values.surfaceMax ?? ""}
+          value={filters.surfaceMax ?? ""}
+          onChange={(e) => update("surfaceMax", e.target.value)}
         />
       </div>
 
@@ -151,7 +182,8 @@ export function ListingFilters({ values }: { values: ListingFiltersValues }) {
           type="number"
           min={1}
           step={1}
-          defaultValue={values.rooms ?? ""}
+          value={filters.rooms ?? ""}
+          onChange={(e) => update("rooms", e.target.value)}
         />
       </div>
 
