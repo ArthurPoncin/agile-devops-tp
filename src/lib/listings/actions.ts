@@ -112,11 +112,81 @@ export async function updateListing(id: string, formData: FormData) {
     surface: formData.get("surface"),
     rooms: formData.get("rooms"),
     price: formData.get("price"),
+    description: formData.get("description") || undefined,
   });
 
   if (!parsed.success) {
     return { error: "Champs invalides." };
   }
+
+  // Photos existantes à conserver (envoyées depuis le formulaire)
+  const keepPhotos = formData
+    .getAll("keepPhoto")
+    .filter((v): v is string => typeof v === "string" && v.startsWith("http"));
+
+  // Nouvelles photos à uploader
+  const photoFiles = formData
+    .getAll("photos")
+    .filter(
+      (entry): entry is File =>
+        entry instanceof File && entry.size > 0 && entry.name !== "",
+    );
+
+  if (keepPhotos.length + photoFiles.length > MAX_PHOTO_COUNT) {
+    return { error: `Maximum ${MAX_PHOTO_COUNT} photos.` };
+  }
+
+  for (const file of photoFiles) {
+    if (!file.type.startsWith("image/")) return { error: "Format de photo invalide." };
+    if (file.size > MAX_PHOTO_SIZE) return { error: "Photo trop volumineuse (max 5 Mo)." };
+  }
+
+  // Récupérer les photos actuelles pour supprimer celles retirées
+  const { data: currentListing } = await supabase
+    .from("listings")
+    .select("photos")
+    .eq("id", id)
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!currentListing) {
+    return { error: "Modification impossible. Vous n'êtes pas le propriétaire." };
+  }
+
+  const currentPhotos = Array.isArray(currentListing.photos)
+    ? (currentListing.photos as string[])
+    : [];
+
+  const deletedPhotos = currentPhotos.filter((url) => !keepPhotos.includes(url));
+
+  if (deletedPhotos.length > 0) {
+    try {
+      await blobDel(deletedPhotos, { token: process.env.BLOB_READ_WRITE_TOKEN });
+    } catch {
+      console.error("[updateListing] impossible de supprimer des photos du blob");
+    }
+  }
+
+  // Uploader les nouvelles photos
+  const newUrls: string[] = [];
+  for (const file of photoFiles) {
+    const ext = extensionOf(file.name);
+    const pathname = `annonce/${crypto.randomUUID()}${ext}`;
+    try {
+      const { url } = await put(pathname, file, {
+        access: "private",
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
+      newUrls.push(url);
+    } catch {
+      if (newUrls.length > 0) {
+        await blobDel(newUrls, { token: process.env.BLOB_READ_WRITE_TOKEN });
+      }
+      return { error: "Impossible d'envoyer les photos." };
+    }
+  }
+
+  const photos = [...keepPhotos, ...newUrls];
 
   const { error, data } = await supabase
     .from("listings")
@@ -127,6 +197,8 @@ export async function updateListing(id: string, formData: FormData) {
       surface: parsed.data.surface,
       rooms: parsed.data.rooms,
       price: parsed.data.price,
+      description: parsed.data.description ?? null,
+      photos,
     })
     .eq("id", id)
     .eq("owner_id", user.id)
