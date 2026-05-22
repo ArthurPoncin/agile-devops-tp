@@ -10,6 +10,16 @@ export async function Header() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  let unreadCount = 0;
+  if (user) {
+    const { count } = await supabase
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .eq("read", false)
+      .eq("sender_type", "buyer");
+    unreadCount = count ?? 0;
+  }
+
   return (
     <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
@@ -39,10 +49,15 @@ export async function Header() {
               </Link>
               <Link
                 href="/messages"
-                className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                className="relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
                 <Inbox className="size-3.5" />
                 Messages
+                {unreadCount > 0 && (
+                  <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
               </Link>
               <Link
                 href="/listings/new"
