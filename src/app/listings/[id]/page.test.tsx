@@ -133,11 +133,11 @@ describe("ListingDetailPage", () => {
 
     render(await Page({ params: Promise.resolve({ id: LISTING_ID }) }));
 
-    expect(screen.getByText("Maison")).toBeInTheDocument();
-    expect(screen.getByText("Nantes")).toBeInTheDocument();
+    expect(screen.getAllByText("Maison").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Nantes").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/120\s*m²/)).toBeInTheDocument();
     expect(screen.getByText(/5\s*pièces/)).toBeInTheDocument();
-    expect(screen.getByText(/450[\s ]000\s*€/)).toBeInTheDocument();
+    expect(screen.getAllByText(/450[\s ]000\s*€/).length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders 'Appartement' label for an apartment listing", async () => {
@@ -149,7 +149,7 @@ describe("ListingDetailPage", () => {
 
     render(await Page({ params: Promise.resolve({ id: LISTING_ID }) }));
 
-    expect(screen.getByText("Appartement")).toBeInTheDocument();
+    expect(screen.getAllByText("Appartement").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders the description when present", async () => {

@@ -122,12 +122,12 @@ export default async function AnnoncesPage({ searchParams }: Props) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-6 py-10 space-y-8">
+    <main className="mx-auto w-full max-w-7xl px-6 py-10 space-y-8 animate-fade-in-up">
       <div className="flex items-baseline gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Annonces</h1>
         {!error && (
-          <span className="text-sm text-muted-foreground">
-            {count ?? 0} bien{(count ?? 0) > 1 ? "s" : ""} disponible{(count ?? 0) > 1 ? "s" : ""}
+          <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-medium text-accent">
+            {count ?? 0} bien{(count ?? 0) > 1 ? "s" : ""}
           </span>
         )}
       </div>

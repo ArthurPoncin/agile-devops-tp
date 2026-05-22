@@ -22,7 +22,7 @@ export function ListingFilters({ values }: { values: ListingFiltersValues }) {
       method="get"
       role="search"
       aria-label="Filtres des annonces"
-      className="rounded-md border bg-card p-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      className="rounded-xl border bg-card p-5 shadow-sm grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
     >
       <div className="flex flex-col gap-2">
         <Label htmlFor="city">Ville</Label>

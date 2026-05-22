@@ -12,8 +12,8 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center bg-zinc-50 py-12 dark:bg-black">
-      <main className="w-full max-w-2xl px-6">
+    <div className="flex flex-1 flex-col items-center bg-gradient-to-b from-accent/5 to-background py-12">
+      <main className="w-full max-w-2xl px-6 animate-fade-in-up">
         <div className="space-y-2 pb-8">
           <h1 className="text-2xl font-semibold tracking-tight">Mon profil</h1>
           <p className="text-sm text-muted-foreground">
@@ -21,7 +21,7 @@ export default async function ProfilePage() {
           </p>
         </div>
 
-        <div className="rounded-xl border bg-white p-6 dark:bg-zinc-950">
+        <div className="rounded-xl border bg-card p-6 shadow-sm">
           <ProfileForm initialProfile={profile} action={updateProfile} />
         </div>
 

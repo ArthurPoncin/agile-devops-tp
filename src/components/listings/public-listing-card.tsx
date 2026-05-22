@@ -27,15 +27,15 @@ export function PublicListingCard({ listing }: { listing: PublicListingSummary }
 
   return (
     <Link href={`/listings/${listing.id}`} className="block h-full">
-      <Card className="overflow-hidden h-full flex flex-col transition-all hover:shadow-md hover:-translate-y-0.5">
-        <div className="relative aspect-[4/3] bg-muted shrink-0">
+      <Card className="group overflow-hidden h-full flex flex-col transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-accent/30">
+        <div className="relative aspect-[4/3] bg-muted shrink-0 overflow-hidden">
           {photoUrl ? (
             <Image
               src={photoUrl}
               alt={listing.title}
               fill
               unoptimized
-              className="object-cover"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
@@ -44,7 +44,7 @@ export function PublicListingCard({ listing }: { listing: PublicListingSummary }
           )}
         </div>
         <CardContent className="p-4 flex flex-col gap-2 flex-1">
-          <h2 className="font-semibold text-base line-clamp-2 leading-snug">{listing.title}</h2>
+          <h2 className="font-semibold text-base line-clamp-2 leading-snug group-hover:text-accent transition-colors">{listing.title}</h2>
           <p className="flex items-center gap-1 text-sm text-muted-foreground">
             <MapPin className="size-3.5 shrink-0" />
             {listing.city}
@@ -52,11 +52,11 @@ export function PublicListingCard({ listing }: { listing: PublicListingSummary }
           {listing.description && (
             <p className="text-sm text-muted-foreground line-clamp-2">{listing.description}</p>
           )}
-          <div className="flex items-center justify-between mt-auto pt-2 border-t">
-            <span className="text-lg font-bold">{priceFormatter.format(listing.price)}</span>
-            <span className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Ruler className="size-3.5" />
-              {listing.surface} m²
+          <div className="flex items-center justify-between mt-auto pt-3 border-t">
+            <span className="text-lg font-bold text-accent">{priceFormatter.format(listing.price)}</span>
+            <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              <Ruler className="size-3" />
+              {listing.surface} m2
             </span>
           </div>
         </CardContent>

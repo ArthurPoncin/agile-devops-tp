@@ -53,7 +53,7 @@ describe("MesAnnoncesPage", () => {
 
     expect(screen.getByRole("heading", { name: /mes annonces/i })).toBeInTheDocument();
     expect(
-      screen.getByText(/vous n'avez pas encore publié d'annonce/i),
+      screen.getByText(/vous n.avez pas encore publié d.annonce/i),
     ).toBeInTheDocument();
   });
 

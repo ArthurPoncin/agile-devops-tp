@@ -1,7 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
-import { Search, PlusCircle, ArrowRight, Building2, MapPin, ShieldCheck } from "lucide-react";
+import { Search, ArrowRight, MoveRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
 import {
   PublicListingCard,
@@ -30,65 +32,63 @@ export default async function HomePage() {
 
   const listings = (data ?? []) as PublicListingSummary[];
 
+  const heroPhotos = listings
+    .filter((l) => Array.isArray(l.photos) && l.photos.length > 0)
+    .slice(0, 3)
+    .map((l) => ({
+      url: `/api/photo?url=${encodeURIComponent(String((l.photos as string[])[0]))}`,
+      title: l.title,
+    }));
+
   return (
     <main className="flex flex-col flex-1">
-      <section className="relative flex flex-col items-center justify-center gap-8 px-6 py-28 text-center overflow-hidden bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900 dark:to-zinc-950">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(0,0,0,0.03)_0%,transparent_70%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.04)_0%,transparent_70%)]" />
-
-        <div className="relative flex flex-col items-center gap-6">
-          <div className="flex items-center gap-2 rounded-full border bg-white px-4 py-1.5 text-sm text-muted-foreground shadow-sm dark:bg-zinc-800">
-            <Building2 className="size-4" />
-            La plateforme immobilière simple et efficace
-          </div>
-
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            Trouvez le bien
-            <br />
-            <span className="text-primary">qui vous ressemble</span>
-          </h1>
-
-          <p className="max-w-md text-base text-muted-foreground sm:text-lg">
-            Parcourez des annonces vérifiées ou publiez la vôtre en quelques clics.
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <Link href="/annonces" className={buttonVariants({ size: "lg" })}>
-              <Search className="size-4" data-icon="inline-start" />
-              Voir les annonces
-            </Link>
-            <Link
-              href="/login"
-              className={buttonVariants({ variant: "outline", size: "lg" })}
-            >
-              <PlusCircle className="size-4" data-icon="inline-start" />
-              Déposer une annonce
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-y bg-zinc-50/50 dark:bg-zinc-900/50">
-        <div className="mx-auto grid w-full max-w-5xl grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-            <Search className="size-6 text-primary" />
-            <h3 className="font-semibold">Recherche avancée</h3>
-            <p className="text-sm text-muted-foreground">
-              Filtrez par ville, prix, surface et type de bien.
-            </p>
-          </div>
-          <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-            <ShieldCheck className="size-6 text-primary" />
-            <h3 className="font-semibold">Annonces vérifiées</h3>
-            <p className="text-sm text-muted-foreground">
-              Des biens réels publiés par des vendeurs identifiés.
-            </p>
-          </div>
-          <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-            <MapPin className="size-6 text-primary" />
-            <h3 className="font-semibold">Partout en France</h3>
-            <p className="text-sm text-muted-foreground">
-              Maisons et appartements dans toutes les régions.
-            </p>
+      <section className="w-full py-20 lg:py-32">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2">
+            <div className="flex flex-col gap-6">
+              <Badge variant="outline" className="w-fit border-accent/30 text-accent">
+                Nouveau sur ImmoMatch
+              </Badge>
+              <div className="flex flex-col gap-4">
+                <h1 className="max-w-lg text-5xl font-bold tracking-tighter md:text-7xl">
+                  Trouvez le bien qui vous ressemble
+                </h1>
+                <p className="max-w-md text-xl leading-relaxed tracking-tight text-muted-foreground">
+                  Parcourez des annonces vérifiées ou publiez la vôtre en quelques clics. Simple, rapide, efficace.
+                </p>
+              </div>
+              <div className="flex flex-row gap-4">
+                <Link href="/annonces" className={buttonVariants({ size: "lg", variant: "outline", className: "gap-2" })}>
+                  <Search className="size-4" />
+                  Voir les annonces
+                </Link>
+                <Link href="/signup" className={buttonVariants({ size: "lg", className: "gap-2" })}>
+                  Créer un compte
+                  <MoveRight className="size-4" />
+                </Link>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {heroPhotos.length >= 3 ? (
+                <>
+                  <div className="overflow-hidden rounded-xl border shadow-sm">
+                    <Image src={heroPhotos[0].url} alt={heroPhotos[0].title} width={400} height={400} unoptimized className="aspect-square w-full object-cover" />
+                  </div>
+                  <div className="overflow-hidden rounded-xl border shadow-sm row-span-2">
+                    <Image src={heroPhotos[1].url} alt={heroPhotos[1].title} width={400} height={800} unoptimized className="h-full w-full object-cover" />
+                  </div>
+                  <div className="overflow-hidden rounded-xl border shadow-sm">
+                    <Image src={heroPhotos[2].url} alt={heroPhotos[2].title} width={400} height={400} unoptimized className="aspect-square w-full object-cover" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="aspect-square rounded-xl bg-muted" />
+                  <div className="row-span-2 rounded-xl bg-muted" />
+                  <div className="aspect-square rounded-xl bg-muted" />
+                </>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -105,7 +105,7 @@ export default async function HomePage() {
           </div>
           <Link
             href="/annonces"
-            className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            className="flex items-center gap-1 text-sm font-medium text-accent hover:underline"
           >
             Tout voir
             <ArrowRight className="size-3.5" />
@@ -131,7 +131,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section className="border-t bg-zinc-50 px-6 py-16 text-center dark:bg-zinc-900">
+      <section className="border-t bg-accent/5 px-6 py-16 text-center">
         <div className="mx-auto max-w-md space-y-4">
           <h2 className="text-2xl font-semibold tracking-tight">
             Prêt à vous lancer ?

@@ -72,14 +72,24 @@ export default async function ListingDetailPage({
     .single();
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-10 space-y-8">
+    <main className="mx-auto w-full max-w-4xl px-6 py-10 space-y-8 animate-fade-in-up">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">{listing.title}</h1>
-        <FavoriteButton
-          listingId={listing.id}
-          initialIsFavorite={isFavorite}
-          hasUser={!!user}
-        />
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">{listing.title}</h1>
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <span>{typeLabels[listing.type]}</span>
+            <span>-</span>
+            <span>{listing.city}</span>
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-2xl font-bold text-accent">{priceFormatter.format(listing.price)}</span>
+          <FavoriteButton
+            listingId={listing.id}
+            initialIsFavorite={isFavorite}
+            hasUser={!!user}
+          />
+        </div>
       </div>
 
       {photoUrls.length > 0 && (
@@ -87,11 +97,11 @@ export default async function ListingDetailPage({
           <h2 className="sr-only">Photos</h2>
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {photoUrls.map(({ path, url }, index) => (
-              <li key={path} className="overflow-hidden rounded-md border">
+              <li key={path} className="overflow-hidden rounded-xl border shadow-sm">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={url}
-                  alt={`${listing.title} — photo ${index + 1}`}
+                  alt={`${listing.title} - photo ${index + 1}`}
                   className="aspect-video w-full object-cover"
                 />
               </li>
@@ -100,52 +110,56 @@ export default async function ListingDetailPage({
         </section>
       )}
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">Caractéristiques</h2>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
-          <div>
-            <dt className="text-muted-foreground">Type</dt>
-            <dd>{typeLabels[listing.type]}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Ville</dt>
-            <dd>{listing.city}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Surface</dt>
-            <dd>{listing.surface} m²</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Nombre de pièces</dt>
-            <dd>{listing.rooms} pièces</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Prix</dt>
-            <dd>{priceFormatter.format(listing.price)}</dd>
-          </div>
-        </dl>
-      </section>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <section className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+            <h2 className="text-lg font-semibold">Caractéristiques</h2>
+            <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
+              <div className="rounded-lg bg-muted/50 p-3">
+                <dt className="text-xs text-muted-foreground">Type</dt>
+                <dd className="font-medium">{typeLabels[listing.type]}</dd>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-3">
+                <dt className="text-xs text-muted-foreground">Ville</dt>
+                <dd className="font-medium">{listing.city}</dd>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-3">
+                <dt className="text-xs text-muted-foreground">Surface</dt>
+                <dd className="font-medium">{listing.surface} m²</dd>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-3">
+                <dt className="text-xs text-muted-foreground">Pièces</dt>
+                <dd className="font-medium">{listing.rooms} pièces</dd>
+              </div>
+              <div className="rounded-lg bg-accent/10 p-3 border border-accent/20">
+                <dt className="text-xs text-accent">Prix</dt>
+                <dd className="font-bold text-accent">{priceFormatter.format(listing.price)}</dd>
+              </div>
+            </dl>
+          </section>
 
-      {listing.description ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-medium">Description</h2>
-          <p className="text-sm whitespace-pre-line">{listing.description}</p>
+          {listing.description ? (
+            <section className="rounded-xl border bg-card p-6 shadow-sm space-y-3">
+              <h2 className="text-lg font-semibold">Description</h2>
+              <p className="text-sm leading-relaxed whitespace-pre-line text-muted-foreground">{listing.description}</p>
+            </section>
+          ) : null}
+        </div>
+
+        <section className="rounded-xl border bg-card p-6 shadow-sm space-y-4 h-fit lg:sticky lg:top-20">
+          <h2 className="text-lg font-semibold">Vendeur</h2>
+          <dl className="space-y-3 text-sm">
+            <div>
+              <dt className="text-xs text-muted-foreground">Nom</dt>
+              <dd className="font-medium">{owner?.full_name?.trim() || "Non renseigné"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Téléphone</dt>
+              <dd className="font-medium">{owner?.phone?.trim() || "Non renseigné"}</dd>
+            </div>
+          </dl>
         </section>
-      ) : null}
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">Vendeur</h2>
-        <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-muted-foreground">Nom</dt>
-            <dd>{owner?.full_name?.trim() || "Non renseigné"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Téléphone</dt>
-            <dd>{owner?.phone?.trim() || "Non renseigné"}</dd>
-          </div>
-        </dl>
-      </section>
+      </div>
     </main>
   );
 }

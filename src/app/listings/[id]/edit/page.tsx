@@ -30,15 +30,17 @@ export default async function EditListingPage({ params }: EditListingPageProps) 
   const updateListingWithId = updateListing.bind(null, id);
 
   return (
-    <main className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="w-full max-w-xl space-y-6">
+    <main className="flex flex-1 justify-center px-6 py-10">
+      <div className="w-full max-w-xl space-y-6 animate-fade-in-up">
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">Modifier l&apos;annonce</h1>
           <p className="text-sm text-muted-foreground">
             Modifiez les informations de votre bien immobilier.
           </p>
         </div>
-        <ListingForm action={updateListingWithId} initialData={listing} />
+        <div className="rounded-xl border bg-card p-6 shadow-sm">
+          <ListingForm action={updateListingWithId} initialData={listing} />
+        </div>
       </div>
     </main>
   );
