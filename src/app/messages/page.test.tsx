@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 const getUser = vi.fn();
-const order = vi.fn();
+const overrideTypes = vi.fn();
+const order = vi.fn(() => ({ overrideTypes }));
 const select = vi.fn(() => ({ order }));
 const from = vi.fn(() => ({ select }));
 const redirect = vi.fn<(path: string) => never>();
@@ -20,7 +21,8 @@ vi.mock("next/navigation", () => ({
 
 beforeEach(() => {
   getUser.mockReset();
-  order.mockReset();
+  overrideTypes.mockReset();
+  order.mockClear();
   select.mockClear();
   from.mockClear();
   redirect.mockReset();
@@ -44,7 +46,7 @@ describe("MessagesPage", () => {
     getUser.mockResolvedValue({
       data: { user: { id: "u1", email: "alice@example.com" } },
     });
-    order.mockResolvedValue({ data: [], error: null });
+    overrideTypes.mockResolvedValue({ data: [], error: null });
     const { default: Page } = await import("./page");
 
     render(await Page());
@@ -57,7 +59,7 @@ describe("MessagesPage", () => {
     getUser.mockResolvedValue({
       data: { user: { id: "u1", email: "alice@example.com" } },
     });
-    order.mockResolvedValue({ data: null, error: { message: "boom" } });
+    overrideTypes.mockResolvedValue({ data: null, error: { message: "boom" } });
     const { default: Page } = await import("./page");
 
     render(await Page());
@@ -72,7 +74,7 @@ describe("MessagesPage", () => {
     getUser.mockResolvedValue({
       data: { user: { id: "u1", email: "alice@example.com" } },
     });
-    order.mockResolvedValue({
+    overrideTypes.mockResolvedValue({
       data: [
         {
           id: "m1",
@@ -113,6 +115,9 @@ describe("MessagesPage", () => {
     expect(screen.getByText("Studio Centre-ville")).toBeInTheDocument();
     expect(screen.getByText("Camille Martin")).toBeInTheDocument();
     expect(screen.getByText("camille@example.com")).toBeInTheDocument();
+
+    expect(screen.getByText("10/04/2026")).toBeInTheDocument();
+    expect(screen.getByText("05/04/2026")).toBeInTheDocument();
 
     expect(screen.queryByText(/aucun message reçu/i)).not.toBeInTheDocument();
   });

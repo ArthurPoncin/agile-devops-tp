@@ -23,9 +23,10 @@ export default async function MessagesPage() {
   const { data, error } = await supabase
     .from("messages")
     .select("id, content, buyer_name, buyer_email, created_at, listings(title)")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .overrideTypes<MessageRow[], { merge: false }>();
 
-  const messages = (data ?? []) as unknown as MessageRow[];
+  const messages = data ?? [];
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10 space-y-6">
@@ -45,9 +46,17 @@ export default async function MessagesPage() {
               key={message.id}
               className="rounded-md border p-4 space-y-2"
             >
-              {message.listings?.title ? (
-                <p className="text-sm font-medium">{message.listings.title}</p>
-              ) : null}
+              <div className="flex items-baseline justify-between gap-2">
+                {message.listings?.title ? (
+                  <p className="text-sm font-medium">{message.listings.title}</p>
+                ) : <span />}
+                <time
+                  dateTime={message.created_at}
+                  className="text-xs text-muted-foreground"
+                >
+                  {new Date(message.created_at).toLocaleDateString("fr-FR")}
+                </time>
+              </div>
               <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               <p className="text-xs text-muted-foreground">
                 <span>{message.buyer_name}</span>
