@@ -2,7 +2,7 @@ import Link from "next/link";
 import { logout } from "@/lib/auth/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
-import { Home, Search, List, Inbox, PlusCircle, User, LogOut } from "lucide-react";
+import { Home, Search, List, Inbox, Heart, PlusCircle, User, LogOut } from "lucide-react";
 
 export async function Header() {
   const supabase = await createClient();
@@ -46,6 +46,13 @@ export async function Header() {
               >
                 <List className="size-3.5" />
                 Mes annonces
+              </Link>
+              <Link
+                href="/favoris"
+                className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <Heart className="size-3.5" />
+                Favoris
               </Link>
               <Link
                 href="/messages"

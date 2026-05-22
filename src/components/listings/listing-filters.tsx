@@ -41,7 +41,13 @@ function valuesToQuery(values: ListingFiltersValues): string {
   return params.toString();
 }
 
-export function ListingFilters({ values }: { values: ListingFiltersValues }) {
+export function ListingFilters({
+  values,
+  resetHref = "/annonces",
+}: {
+  values: ListingFiltersValues;
+  resetHref?: string;
+}) {
   const router = useRouter();
   const [filters, setFilters] = useState<ListingFiltersValues>(values);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -73,7 +79,7 @@ export function ListingFilters({ values }: { values: ListingFiltersValues }) {
       const query = valuesToQuery(next);
       if (query === lastSentQueryRef.current) return;
       lastSentQueryRef.current = query;
-      router.replace(query ? `/annonces?${query}` : "/annonces", {
+      router.replace(query ? `${resetHref}?${query}` : resetHref, {
         scroll: false,
       });
     }, DEBOUNCE_MS);
@@ -189,7 +195,7 @@ export function ListingFilters({ values }: { values: ListingFiltersValues }) {
 
       <div className="flex items-end">
         <Link
-          href="/annonces"
+          href={resetHref}
           className={buttonVariants({ variant: "outline", className: "w-full" })}
         >
           Réinitialiser

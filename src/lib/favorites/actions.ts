@@ -34,6 +34,7 @@ export async function toggleFavorite(listingId: string, isFavorite: boolean) {
 
   // On force la revalidation des pages pour rafraîchir l'état visuel du bouton
   revalidatePath("/annonces");
+  revalidatePath("/favoris");
   revalidatePath(`/listings/${listingId}`);
   return { success: true };
 }
