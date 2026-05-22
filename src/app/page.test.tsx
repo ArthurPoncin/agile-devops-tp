@@ -56,8 +56,8 @@ describe("HomePage", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Trouvez le bien");
     const voirLink = screen.getByRole("link", { name: /voir les annonces/i });
     expect(voirLink).toHaveAttribute("href", "/annonces");
-    const deposerLink = screen.getByRole("link", { name: /déposer une annonce/i });
-    expect(deposerLink).toHaveAttribute("href", "/login");
+    const signupLinks = screen.getAllByRole("link", { name: /créer un compte/i });
+    expect(signupLinks[0]).toHaveAttribute("href", "/signup");
   });
 
   it("renders the signup CTA at the bottom", async () => {
@@ -65,8 +65,9 @@ describe("HomePage", () => {
 
     render(await Page());
 
-    const signupLink = screen.getByRole("link", { name: /créer un compte/i });
-    expect(signupLink).toHaveAttribute("href", "/signup");
+    const signupLinks = screen.getAllByRole("link", { name: /créer un compte/i });
+    expect(signupLinks.length).toBeGreaterThanOrEqual(2);
+    expect(signupLinks[signupLinks.length - 1]).toHaveAttribute("href", "/signup");
   });
 
   it("displays the latest listings when data is available", async () => {
@@ -105,13 +106,11 @@ describe("HomePage", () => {
     expect(screen.queryByText(/aucune annonce disponible/i)).not.toBeInTheDocument();
   });
 
-  it("renders the features section", async () => {
+  it("renders the bottom call-to-action section", async () => {
     const { default: Page } = await import("./page");
 
     render(await Page());
 
-    expect(screen.getByText("Recherche avancée")).toBeInTheDocument();
-    expect(screen.getByText("Annonces vérifiées")).toBeInTheDocument();
-    expect(screen.getByText("Partout en France")).toBeInTheDocument();
+    expect(screen.getByText(/prêt à vous lancer/i)).toBeInTheDocument();
   });
 });

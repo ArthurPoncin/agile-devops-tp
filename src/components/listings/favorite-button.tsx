@@ -37,7 +37,7 @@ export function FavoriteButton({ listingId, initialIsFavorite, hasUser }: Favori
     <button
       onClick={handleClick}
       disabled={isPending}
-      className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-900 shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
+      className="flex h-9 w-9 items-center justify-center rounded-full border bg-card text-foreground shadow-sm transition-all hover:bg-accent hover:scale-110"
       aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
     >
       <svg

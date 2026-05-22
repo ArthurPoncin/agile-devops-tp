@@ -3,15 +3,17 @@ import { ListingForm } from "@/components/listings/listing-form";
 
 export default function NewListingPage() {
   return (
-    <main className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="w-full max-w-xl space-y-6">
+    <main className="flex flex-1 justify-center px-6 py-10">
+      <div className="w-full max-w-xl space-y-6 animate-fade-in-up">
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">Publier une annonce</h1>
           <p className="text-sm text-muted-foreground">
-            Renseignez les caractéristiques de votre bien pour le proposer à des acheteurs.
+            Renseignez les caracteristiques de votre bien pour le proposer a des acheteurs.
           </p>
         </div>
-        <ListingForm action={createListing} />
+        <div className="rounded-xl border bg-card p-6 shadow-sm">
+          <ListingForm action={createListing} />
+        </div>
       </div>
     </main>
   );

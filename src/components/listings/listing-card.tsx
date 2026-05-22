@@ -23,7 +23,7 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
 
 export function ListingCard({ listing }: { listing: ListingSummary }) {
   return (
-    <article className="flex items-center justify-between rounded-md border p-4">
+    <article className="flex items-center justify-between rounded-xl border bg-card p-4 shadow-sm transition-all hover:shadow-md hover:border-accent/30">
       <div className="space-y-1">
         <h2 className="font-medium">{listing.title}</h2>
         <p className="text-sm text-muted-foreground">
@@ -34,7 +34,7 @@ export function ListingCard({ listing }: { listing: ListingSummary }) {
         <Badge variant={listing.status === "active" ? "default" : "secondary"}>
           {statusLabels[listing.status]}
         </Badge>
-        
+
         <Link
           href={`/listings/${listing.id}/edit`}
           className={buttonVariants({ variant: "outline", size: "sm" })}
