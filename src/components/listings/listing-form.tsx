@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useRef, useState, useTransition, startTransition, type ComponentRef } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +43,8 @@ interface ListingFormProps {
     surface: number;
     rooms: number;
     price: number;
+    description?: string | null;
+    photos?: unknown;
   };
 }
 
@@ -57,6 +59,11 @@ export function ListingForm({ action, initialData }: ListingFormProps) {
   const [isGenerating, startGenerate] = useTransition();
   const [genError, setGenError] = useState<string | null>(null);
   const [selectedPhotos, setSelectedPhotos] = useState<PhotoEntry[]>([]);
+  const [keptPhotoUrls, setKeptPhotoUrls] = useState<string[]>(
+    Array.isArray(initialData?.photos)
+      ? (initialData.photos as string[])
+      : [],
+  );
 
   const isEdit = !!initialData;
 
@@ -89,6 +96,9 @@ export function ListingForm({ action, initialData }: ListingFormProps) {
     e.preventDefault();
     if (!formRef.current) return;
     const fd = new FormData(formRef.current);
+    for (const url of keptPhotoUrls) {
+      fd.append("keepPhoto", url);
+    }
     for (const { file } of selectedPhotos) {
       fd.append("photos", file);
     }
@@ -191,7 +201,7 @@ export function ListingForm({ action, initialData }: ListingFormProps) {
           id="description"
           name="description"
           rows={5}
-          defaultValue=""
+          defaultValue={initialData?.description ?? ""}
           placeholder="Décrivez votre bien…"
         />
         {genError && (
@@ -201,12 +211,35 @@ export function ListingForm({ action, initialData }: ListingFormProps) {
         )}
       </div>
 
-      {!isEdit && (
-        <div className="flex flex-col gap-2">
-          <Label>Photos</Label>
-          <PhotoPicker photos={selectedPhotos} onChange={setSelectedPhotos} />
-        </div>
-      )}
+      <div className="flex flex-col gap-2">
+        <Label>Photos</Label>
+        {isEdit && keptPhotoUrls.length > 0 && (
+          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {keptPhotoUrls.map((url, i) => (
+              <li key={url} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/api/photo?url=${encodeURIComponent(url)}`}
+                  alt={`Photo ${i + 1}`}
+                  className="aspect-square w-full rounded-md object-cover border"
+                />
+                <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white">
+                  {i + 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setKeptPhotoUrls((prev) => prev.filter((u) => u !== url))}
+                  className="absolute right-1 top-1 rounded bg-black/60 p-0.5 text-white hover:bg-black/80"
+                  aria-label={`Supprimer la photo ${i + 1}`}
+                >
+                  <X className="size-3" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <PhotoPicker photos={selectedPhotos} onChange={setSelectedPhotos} />
+      </div>
 
       {state?.error ? (
         <p role="alert" className="text-sm text-destructive">
