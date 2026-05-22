@@ -19,22 +19,43 @@ export type ReferencedListing = {
   photoUrl: string | null;
 };
 
+const MAX_LISTINGS_WITH_IMAGES = 8;
+const PRIVATE_BLOB_HOST = "rwjv07fuxbtccnji.private.blob.vercel-storage.com";
+
+async function fetchImageAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const headers: HeadersInit = {};
+    if (url.includes(PRIVATE_BLOB_HOST) && process.env.BLOB_READ_WRITE_TOKEN) {
+      headers.Authorization = `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`;
+    }
+    const res = await fetch(url, { headers });
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.byteLength > 4 * 1024 * 1024) return null;
+    const mime = res.headers.get("Content-Type") ?? "image/jpeg";
+    return `data:${mime};base64,${buf.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
 const SYSTEM_PROMPT_BASE = [
   "Tu es l'assistant virtuel d'ImmoMatch, une plateforme immobilière française.",
   "Tu aides les visiteurs à comprendre comment utiliser le site (chercher une annonce, contacter un vendeur, publier un bien), tu réponds à des questions générales sur l'immobilier, et tu peux proposer des annonces pertinentes parmi celles publiées sur le site.",
   "Réponds toujours en français, de manière courte (2 à 5 phrases) et chaleureuse.",
   "Réponds STRICTEMENT en texte brut : pas de markdown, pas de gras (**), pas d'italique (*), pas de titres (#), pas de listes à puces (-) ni numérotées, pas de code (```). Les liens doivent être collés tels quels dans le texte (ex: voir /listings/abc-123).",
-  "Tu as accès ci-dessous à la liste exhaustive des annonces actuellement publiées avec leurs caractéristiques (type, ville, surface, pièces, prix).",
+  "Tu reçois ci-dessous la liste des annonces actuellement publiées (texte) ET les photos correspondantes (une par annonce). Les photos sont fournies dans l'ordre des annonces — la 1re image correspond à la 1re annonce listée, etc.",
   "Recommandation d'annonces — règles ABSOLUES :",
   "1) N'invente JAMAIS d'annonce qui n'est pas dans la liste ci-dessous.",
-  "2) Avant de proposer une annonce, vérifie LIGNE PAR LIGNE qu'elle respecte TOUS les critères donnés par l'utilisateur. Si l'utilisateur dit \"moins de X €\", le prix de l'annonce DOIT être strictement inférieur ou égal à X. Si l'utilisateur dit \"à Nantes\", la ville DOIT être exactement Nantes. Idem pour le type (maison/appartement), la surface, le nombre de pièces.",
-  "3) Ne propose JAMAIS une annonce qui dépasse le budget ou ne correspond pas à un critère, même si elle est proche.",
-  "4) Si AUCUNE annonce de la liste ne correspond aux critères, dis-le honnêtement (\"Aucune annonce ne correspond exactement à votre recherche aujourd'hui\") et propose d'élargir les critères ou d'aller voir /annonces. Ne propose rien dans ce cas.",
-  "5) Limite-toi à 1 à 3 annonces maximum, et colle leur lien sous la forme /listings/<id>.",
+  "2) Avant de proposer une annonce, vérifie LIGNE PAR LIGNE qu'elle respecte TOUS les critères donnés par l'utilisateur (prix, ville, type, surface, pièces). Si l'utilisateur dit \"moins de X €\", le prix DOIT être ≤ X. Si l'utilisateur dit \"à Nantes\", la ville DOIT être Nantes.",
+  "3) Si la demande contient un détail visuel (banc, piscine, jardin, balcon, terrasse, vue, lumière, parquet, brique, style moderne/ancien, atypique, …), REGARDE les photos fournies pour identifier les annonces qui correspondent visuellement. Combine ces critères visuels avec les critères textuels.",
+  "4) Ne propose JAMAIS une annonce qui ne respecte pas un critère, même si elle est proche.",
+  "5) Si AUCUNE annonce ne correspond, dis-le honnêtement et invite à élargir la recherche ou à aller voir /annonces. Ne propose rien dans ce cas.",
+  "6) Limite-toi à 1 à 3 annonces maximum, et colle leur lien sous la forme /listings/<id>.",
   "Ne donne pas de conseils juridiques ou fiscaux engageants : oriente vers un professionnel si nécessaire.",
 ].join(" ");
 
-type ListingForContext = {
+type ListingForPreview = {
   id: string;
   title: string;
   type: string;
@@ -42,9 +63,6 @@ type ListingForContext = {
   surface: number;
   rooms: number;
   price: number;
-};
-
-type ListingForPreview = ListingForContext & {
   photos: unknown;
 };
 
@@ -70,7 +88,7 @@ function extractPhotoPaths(raw: unknown): string[] {
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
-function buildPhotoUrl(
+function buildPreviewPhotoUrl(
   supabase: SupabaseClient,
   paths: string[],
 ): string | null {
@@ -82,11 +100,24 @@ function buildPhotoUrl(
   return supabase.storage.from("listings").getPublicUrl(first).data.publicUrl;
 }
 
-async function fetchListingsContext(): Promise<{
-  prompt: string;
+function buildAiPhotoUrl(
+  supabase: SupabaseClient,
+  paths: string[],
+): string | null {
+  if (paths.length === 0) return null;
+  const first = paths[0];
+  if (first.startsWith("https://")) return first;
+  return supabase.storage.from("listings").getPublicUrl(first).data.publicUrl;
+}
+
+type ContextResult = {
   byId: Map<string, ListingForPreview>;
   supabase: SupabaseClient;
-}> {
+  listingsText: string;
+  imageBlock: Array<{ type: "image_url"; image_url: { url: string } }>;
+};
+
+async function fetchListingsContext(): Promise<ContextResult> {
   const supabase = await createClient();
   try {
     const { data } = await supabase
@@ -100,24 +131,58 @@ async function fetchListingsContext(): Promise<{
     const byId = new Map(listings.map((l) => [l.id, l]));
 
     if (listings.length === 0) {
-      return { prompt: "Aucune annonce active pour le moment.", byId, supabase };
+      return {
+        byId,
+        supabase,
+        listingsText: "Aucune annonce active pour le moment.",
+        imageBlock: [],
+      };
     }
 
-    const lines = listings.map((l) => {
-      const price = l.price.toLocaleString("fr-FR");
-      return `- "${l.title}" — ${l.type}, ${l.city}, ${l.surface} m², ${l.rooms} pièces, ${price} € → /listings/${l.id}`;
-    });
+    const withPhotoUrl = listings.map((l) => ({
+      listing: l,
+      aiPhotoUrl: buildAiPhotoUrl(supabase, extractPhotoPaths(l.photos)),
+    }));
 
-    return {
-      prompt: ["Annonces actuellement publiées :", ...lines].join("\n"),
-      byId,
-      supabase,
+    const candidates = withPhotoUrl
+      .filter((x) => x.aiPhotoUrl)
+      .slice(0, MAX_LISTINGS_WITH_IMAGES);
+    const dataUrls = await Promise.all(
+      candidates.map((x) => fetchImageAsDataUrl(x.aiPhotoUrl!)),
+    );
+    const withImages = candidates
+      .map((x, i) => ({ listing: x.listing, dataUrl: dataUrls[i] }))
+      .filter((x): x is { listing: ListingForPreview; dataUrl: string } => x.dataUrl !== null);
+    const imageIds = new Set(withImages.map((x) => x.listing.id));
+    const others = withPhotoUrl.filter((x) => !imageIds.has(x.listing.id));
+
+    const formatLine = (l: ListingForPreview, hasImage: boolean, idx?: number) => {
+      const price = l.price.toLocaleString("fr-FR");
+      const prefix = hasImage && idx !== undefined ? `[image ${idx + 1}] ` : "";
+      return `${prefix}"${l.title}" — ${l.type}, ${l.city}, ${l.surface} m², ${l.rooms} pièces, ${price} € → /listings/${l.id}`;
     };
+
+    const linesWithImages = withImages.map((x, i) => formatLine(x.listing, true, i));
+    const linesOthers = others.map((x) => formatLine(x.listing, false));
+
+    const text = [
+      "Annonces actuellement publiées (les premières viennent avec leur 1re photo, dans l'ordre des images jointes) :",
+      ...linesWithImages,
+      ...(linesOthers.length > 0 ? ["", "Autres annonces sans photo jointe :", ...linesOthers] : []),
+    ].join("\n");
+
+    const imageBlock = withImages.map((x) => ({
+      type: "image_url" as const,
+      image_url: { url: x.dataUrl },
+    }));
+
+    return { byId, supabase, listingsText: text, imageBlock };
   } catch {
     return {
-      prompt: "Liste des annonces indisponible pour le moment.",
       byId: new Map(),
       supabase,
+      listingsText: "Liste des annonces indisponible pour le moment.",
+      imageBlock: [],
     };
   }
 }
@@ -143,7 +208,7 @@ function extractReferencedListings(
       price: listing.price,
       surface: listing.surface,
       rooms: listing.rooms,
-      photoUrl: buildPhotoUrl(supabase, extractPhotoPaths(listing.photos)),
+      photoUrl: buildPreviewPhotoUrl(supabase, extractPhotoPaths(listing.photos)),
     });
   }
   return result;
@@ -161,8 +226,29 @@ export async function chatWithAssistant(
     .slice(-10)
     .map((m) => ({ role: m.role, content: m.content.slice(0, 1000) }));
 
-  const { prompt: listingsContext, byId, supabase } = await fetchListingsContext();
-  const systemPrompt = `${SYSTEM_PROMPT_BASE}\n\n${listingsContext}`;
+  const { byId, supabase, listingsText, imageBlock } = await fetchListingsContext();
+  const systemPrompt = `${SYSTEM_PROMPT_BASE}\n\n${listingsText}`;
+
+  // Pixtral expects images on a user message, not the system prompt. We attach them
+  // to a synthetic priming turn so the model can see them as part of the context.
+  const primingTurn =
+    imageBlock.length > 0
+      ? [
+          {
+            role: "user" as const,
+            content: [
+              { type: "text" as const, text: "Voici les photos des annonces listées dans le prompt système, dans le même ordre :" },
+              ...imageBlock,
+            ],
+          },
+          {
+            role: "assistant" as const,
+            content: "Bien reçu, j'utiliserai ces photos pour évaluer les critères visuels.",
+          },
+        ]
+      : [];
+
+  const model = imageBlock.length > 0 ? "pixtral-12b-2409" : "mistral-small-latest";
 
   try {
     const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -172,9 +258,10 @@ export async function chatWithAssistant(
         Authorization: `Bearer ${process.env.MISTRAL_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "mistral-small-latest",
+        model,
         messages: [
           { role: "system", content: systemPrompt },
+          ...primingTurn,
           ...trimmed,
         ],
         max_tokens: 400,
@@ -183,6 +270,8 @@ export async function chatWithAssistant(
     });
 
     if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[chatWithAssistant] Mistral ${res.status}: ${body.slice(0, 500)}`);
       return { error: "L'assistant est momentanément indisponible." };
     }
 
@@ -204,7 +293,8 @@ export async function chatWithAssistant(
     const listings = extractReferencedListings(reply, byId, supabase);
 
     return { reply, listings };
-  } catch {
+  } catch (err) {
+    console.error("[chatWithAssistant] exception:", err);
     return { error: "L'assistant est momentanément indisponible." };
   }
 }
