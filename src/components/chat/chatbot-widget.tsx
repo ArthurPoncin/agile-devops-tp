@@ -1,9 +1,105 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Loader2 } from "lucide-react";
-import { chatWithAssistant, type ChatMessage } from "@/lib/ai/chat";
+import Link from "next/link";
+import { MessageCircle, X, Send, Loader2, MapPin, Maximize2, BedDouble } from "lucide-react";
+import {
+  chatWithAssistant,
+  type ChatMessage,
+  type ReferencedListing,
+} from "@/lib/ai/chat";
 import { cn } from "@/lib/utils";
+
+const LINK_PATTERN = /(https?:\/\/[^\s)]+|\/listings\/[a-f0-9-]{8,})/gi;
+
+function formatPrice(price: number): string {
+  return `${price.toLocaleString("fr-FR")} €`;
+}
+
+function ListingPreview({
+  listing,
+  onClick,
+}: {
+  listing: ReferencedListing;
+  onClick: () => void;
+}) {
+  return (
+    <Link
+      href={`/listings/${listing.id}`}
+      onClick={onClick}
+      className="mt-2 block overflow-hidden rounded-xl border bg-background text-foreground transition-shadow hover:shadow-md"
+    >
+      <div className="flex">
+        <div className="relative h-24 w-24 shrink-0 bg-muted">
+          {listing.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={listing.photoUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+              Pas de photo
+            </div>
+          )}
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col justify-between p-2">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{listing.title}</p>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="size-3 shrink-0" />
+              <span className="truncate">{listing.city}</span>
+            </p>
+          </div>
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span className="flex items-center gap-0.5">
+                <Maximize2 className="size-3" />
+                {listing.surface} m²
+              </span>
+              <span className="flex items-center gap-0.5">
+                <BedDouble className="size-3" />
+                {listing.rooms}
+              </span>
+            </div>
+            <span className="font-semibold text-primary">{formatPrice(listing.price)}</span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function renderMessageText(text: string, onLinkClick: () => void): React.ReactNode[] {
+  const parts = text.split(LINK_PATTERN);
+  return parts.map((part, i) => {
+    if (!part) return null;
+    if (i % 2 === 1) {
+      // We render listing IDs as cards below the text, so skip them here.
+      if (part.startsWith("/listings/")) return null;
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2 font-medium hover:opacity-80"
+          onClick={onLinkClick}
+        >
+          {part}
+        </a>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+function stripListingLinks(text: string): string {
+  return text.replace(LINK_PATTERN, (match) =>
+    match.startsWith("/listings/") ? "" : match,
+  );
+}
 
 const WELCOME: ChatMessage = {
   role: "assistant",
@@ -33,7 +129,7 @@ export function ChatbotWidget() {
     const text = input.trim();
     if (!text || pending) return;
 
-    const next = [...messages, { role: "user" as const, content: text }];
+    const next: ChatMessage[] = [...messages, { role: "user", content: text }];
     setMessages(next);
     setInput("");
     setPending(true);
@@ -45,7 +141,10 @@ export function ChatbotWidget() {
       setMessages((m) => [...m, { role: "assistant", content: `⚠️ ${result.error}` }]);
       return;
     }
-    setMessages((m) => [...m, { role: "assistant", content: result.reply }]);
+    setMessages((m) => [
+      ...m,
+      { role: "assistant", content: result.reply, listings: result.listings },
+    ]);
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -54,6 +153,8 @@ export function ChatbotWidget() {
       void send();
     }
   }
+
+  const closePanel = () => setOpen(false);
 
   return (
     <>
@@ -90,26 +191,36 @@ export function ChatbotWidget() {
             ref={scrollRef}
             className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-background"
           >
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex",
-                  m.role === "user" ? "justify-end" : "justify-start",
-                )}
-              >
+            {messages.map((m, i) => {
+              const isAssistant = m.role === "assistant";
+              const displayText = isAssistant
+                ? stripListingLinks(m.content).replace(/\s+\n/g, "\n").trim()
+                : m.content;
+              return (
                 <div
-                  className={cn(
-                    "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap",
-                    m.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-br-sm"
-                      : "bg-muted text-foreground rounded-bl-sm",
-                  )}
+                  key={i}
+                  className={cn("flex", isAssistant ? "justify-start" : "justify-end")}
                 >
-                  {m.content}
+                  <div
+                    className={cn(
+                      "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap",
+                      isAssistant
+                        ? "bg-muted text-foreground rounded-bl-sm"
+                        : "bg-primary text-primary-foreground rounded-br-sm",
+                    )}
+                  >
+                    {isAssistant ? renderMessageText(displayText, closePanel) : displayText}
+                    {isAssistant && m.listings && m.listings.length > 0 && (
+                      <div className="space-y-2">
+                        {m.listings.map((l) => (
+                          <ListingPreview key={l.id} listing={l} onClick={closePanel} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {pending && (
               <div className="flex justify-start">
                 <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-sm text-muted-foreground">
