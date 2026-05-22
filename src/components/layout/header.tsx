@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 const NAV_LINKS: { href: string; label: string; authOnly?: boolean }[] = [
   { href: "/annonces", label: "Annonces" },
   { href: "/mes-annonces", label: "Mes annonces", authOnly: true },
+  { href: "/messages", label: "Messages", authOnly: true },
   { href: "/listings/new", label: "Publier", authOnly: true },
 ];
 
