@@ -110,6 +110,7 @@ export type Database = {
           buyer_email: string;
           content: string;
           read: boolean;
+          sender_type: "buyer" | "seller";
           created_at: string;
         };
         Insert: {
@@ -120,6 +121,7 @@ export type Database = {
           buyer_email: string;
           content: string;
           read?: boolean;
+          sender_type?: "buyer" | "seller";
           created_at?: string;
         };
         Update: {
@@ -130,6 +132,7 @@ export type Database = {
           buyer_email?: string;
           content?: string;
           read?: boolean;
+          sender_type?: "buyer" | "seller";
           created_at?: string;
         };
         Relationships: [];
