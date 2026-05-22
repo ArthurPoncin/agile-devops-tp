@@ -18,9 +18,10 @@ export default async function MesAnnoncesPage() {
     redirect("/login");
   }
 
+  // Ajout de description et photos dans le select
   const { data, error } = await supabase
     .from("listings")
-    .select("id, title, status, created_at")
+    .select("id, title, status, created_at, description, photos")
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -53,7 +54,8 @@ export default async function MesAnnoncesPage() {
         <ul className="space-y-3">
           {listings.map((listing) => (
             <li key={listing.id}>
-              <ListingCard listing={listing} />
+              {/* On passe le client supabase pour récupérer l'URL publique de l'image */}
+              <ListingCard listing={listing} supabase={supabase} />
             </li>
           ))}
         </ul>
