@@ -1,7 +1,8 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import type { Listing, ListingType } from "@/lib/supabase/database.types";
+import type { ListingType } from "@/lib/supabase/database.types";
+import { ContactFormDialog } from "@/components/listings/contact-form-dialog";
 import { FavoriteButton } from "@/components/listings/favorite-button";
 
 const idSchema = z.string().uuid();
@@ -17,6 +18,20 @@ const priceFormatter = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 0,
 });
 
+interface ListingDetailWithFavorites {
+  id: string;
+  owner_id: string;
+  title: string;
+  type: ListingType;
+  city: string;
+  surface: number;
+  rooms: number;
+  price: number;
+  description: string | null;
+  photos: unknown;
+  favorites: { user_id: string }[];
+}
+
 export default async function ListingDetailPage({
   params,
 }: {
@@ -29,20 +44,25 @@ export default async function ListingDetailPage({
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  let currentUserProfile = null;
+  if (user) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+    currentUserProfile = data;
   }
 
   const { data: listingData } = await supabase
     .from("listings")
-    .select(
-      `id, owner_id, title, type, city, surface, rooms, price, description, photos,
-       favorites(user_id)`,
-    )
+    .select(`
+      id, owner_id, title, type, city, surface, rooms, price, description, photos,
+      favorites(user_id)
+    `)
     .eq("id", id)
     .eq("favorites.user_id", user?.id ?? "00000000-0000-0000-0000-000000000000")
     .single();
@@ -51,19 +71,8 @@ export default async function ListingDetailPage({
     notFound();
   }
 
-  const listing = listingData as Listing & { favorites: { user_id: string }[] };
+  const listing = listingData as unknown as ListingDetailWithFavorites; 
   const isFavorite = Array.isArray(listing.favorites) && listing.favorites.length > 0;
-
-  const photoPaths = Array.isArray(listing.photos)
-    ? listing.photos.filter((p): p is string => typeof p === "string")
-    : [];
-
-  const photoUrls = photoPaths.map((path) => ({
-    path,
-    url: path.startsWith("https://")
-      ? `/api/photo?url=${encodeURIComponent(path)}`
-      : supabase.storage.from("listings").getPublicUrl(path).data.publicUrl,
-  }));
 
   const { data: owner } = await supabase
     .from("profiles")
@@ -71,95 +80,104 @@ export default async function ListingDetailPage({
     .eq("id", listing.owner_id)
     .single();
 
+  const photoPaths = Array.isArray(listing.photos)
+    ? listing.photos.filter((p): p is string => typeof p === "string")
+    : [];
+    
+  const photoUrls = photoPaths.map((path) => ({
+    path,
+    url: path.startsWith("https://")
+      ? `/api/photo?url=${encodeURIComponent(path)}`
+      : supabase.storage.from("listings").getPublicUrl(path).data.publicUrl,
+  }));
+
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 py-10 space-y-8 animate-fade-in-up">
+    <main className="mx-auto w-full max-w-3xl px-6 py-10 space-y-8">
       <div className="flex items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{listing.title}</h1>
-          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <span>{typeLabels[listing.type]}</span>
-            <span>-</span>
-            <span>{listing.city}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold text-accent">{priceFormatter.format(listing.price)}</span>
-          <FavoriteButton
-            listingId={listing.id}
-            initialIsFavorite={isFavorite}
-            hasUser={!!user}
-          />
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">{listing.title}</h1>
+        <FavoriteButton 
+          listingId={listing.id} 
+          initialIsFavorite={isFavorite} 
+          hasUser={!!user} 
+        />
       </div>
 
-      {photoUrls.length > 0 && (
+      {photoUrls.length > 0 ? (
         <section className="space-y-3">
           <h2 className="sr-only">Photos</h2>
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {photoUrls.map(({ path, url }, index) => (
-              <li key={path} className="overflow-hidden rounded-xl border shadow-sm">
+              <li key={path} className="overflow-hidden rounded-md border">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={url}
-                  alt={`${listing.title} - photo ${index + 1}`}
+                  alt={`${listing.title} — photo ${index + 1}`}
                   className="aspect-video w-full object-cover"
                 />
               </li>
             ))}
           </ul>
         </section>
-      )}
+      ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <section className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <h2 className="text-lg font-semibold">Caractéristiques</h2>
-            <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
-              <div className="rounded-lg bg-muted/50 p-3">
-                <dt className="text-xs text-muted-foreground">Type</dt>
-                <dd className="font-medium">{typeLabels[listing.type]}</dd>
-              </div>
-              <div className="rounded-lg bg-muted/50 p-3">
-                <dt className="text-xs text-muted-foreground">Ville</dt>
-                <dd className="font-medium">{listing.city}</dd>
-              </div>
-              <div className="rounded-lg bg-muted/50 p-3">
-                <dt className="text-xs text-muted-foreground">Surface</dt>
-                <dd className="font-medium">{listing.surface} m²</dd>
-              </div>
-              <div className="rounded-lg bg-muted/50 p-3">
-                <dt className="text-xs text-muted-foreground">Pièces</dt>
-                <dd className="font-medium">{listing.rooms} pièces</dd>
-              </div>
-              <div className="rounded-lg bg-accent/10 p-3 border border-accent/20">
-                <dt className="text-xs text-accent">Prix</dt>
-                <dd className="font-bold text-accent">{priceFormatter.format(listing.price)}</dd>
-              </div>
-            </dl>
-          </section>
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium">Caractéristiques</h2>
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+          <div>
+            <dt className="text-muted-foreground">Type</dt>
+            <dd>{typeLabels[listing.type]}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Ville</dt>
+            <dd>{listing.city}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Surface</dt>
+            <dd>{listing.surface} m²</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Nombre de pièces</dt>
+            <dd>{listing.rooms} pièces</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Prix</dt>
+            <dd>{priceFormatter.format(listing.price)}</dd>
+          </div>
+        </dl>
+      </section>
 
-          {listing.description ? (
-            <section className="rounded-xl border bg-card p-6 shadow-sm space-y-3">
-              <h2 className="text-lg font-semibold">Description</h2>
-              <p className="text-sm leading-relaxed whitespace-pre-line text-muted-foreground">{listing.description}</p>
-            </section>
-          ) : null}
-        </div>
+      {listing.description ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-medium">Description</h2>
+          <p className="text-sm whitespace-pre-line">{listing.description}</p>
+        </section>
+      ) : null}
 
-        <section className="rounded-xl border bg-card p-6 shadow-sm space-y-4 h-fit lg:sticky lg:top-20">
-          <h2 className="text-lg font-semibold">Vendeur</h2>
-          <dl className="space-y-3 text-sm">
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium">Vendeur</h2>
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 flex-1">
             <div>
-              <dt className="text-xs text-muted-foreground">Nom</dt>
-              <dd className="font-medium">{owner?.full_name?.trim() || "Non renseigné"}</dd>
+              <dt className="text-muted-foreground">Nom</dt>
+              <dd>{owner?.full_name?.trim() || "Non renseigné"}</dd>
             </div>
             <div>
-              <dt className="text-xs text-muted-foreground">Téléphone</dt>
-              <dd className="font-medium">{owner?.phone?.trim() || "Non renseigné"}</dd>
+              <dt className="text-muted-foreground">Téléphone</dt>
+              <dd>{owner?.phone?.trim() || "Non renseigné"}</dd>
             </div>
           </dl>
-        </section>
-      </div>
+
+          {user?.id !== listing.owner_id && (
+            <div className="pt-2 sm:pt-0">
+              <ContactFormDialog 
+                listingId={listing.id}
+                defaultEmail={user?.email ?? ""}
+                defaultName={currentUserProfile?.full_name ?? ""}
+              />
+            </div>
+          )}
+        </div>
+      </section>
     </main>
   );
 }
