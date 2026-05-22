@@ -28,6 +28,14 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("next/navigation", () => ({
   redirect: (path: string) => redirect(path),
+  useRouter: () => ({
+    replace: vi.fn(),
+    push: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+  }),
 }));
 
 function mockRange(result: { data: unknown[]; count: number; error: unknown } = { data: [], count: 0, error: null }) {
@@ -204,7 +212,7 @@ describe("AnnoncesPage filters", () => {
     expect(gte).not.toHaveBeenCalledWith("rooms", expect.anything());
   });
 
-  it("renders a GET form with one input for each filter and a submit button", async () => {
+  it("renders a search form with one input for each filter (no submit button — search is auto)", async () => {
     const { default: Page } = await import("./page");
 
     render(await Page({ searchParams: Promise.resolve({}) }));
@@ -218,7 +226,7 @@ describe("AnnoncesPage filters", () => {
     expect(screen.getByLabelText(/surface min/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/surface max/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/pièces/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /rechercher/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /rechercher/i })).not.toBeInTheDocument();
   });
 
   it("composes all filters together when multiple searchParams are set", async () => {
