@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingType } from "@/lib/supabase/database.types";
@@ -44,18 +44,18 @@ export default async function ListingDetailPage({
   }
 
   const supabase = await createClient();
-  
+
   const { data: { user } } = await supabase.auth.getUser();
-  
-  let currentUserProfile = null;
-  if (user) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", user.id)
-      .single();
-    currentUserProfile = data;
+
+  if (!user) {
+    redirect("/login");
   }
+
+  const { data: currentUserProfile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
 
   const { data: listingData } = await supabase
     .from("listings")
@@ -64,7 +64,7 @@ export default async function ListingDetailPage({
       favorites(user_id)
     `)
     .eq("id", id)
-    .eq("favorites.user_id", user?.id ?? "00000000-0000-0000-0000-000000000000")
+    .eq("favorites.user_id", user.id)
     .single();
 
   if (!listingData) {
@@ -167,11 +167,11 @@ export default async function ListingDetailPage({
             </div>
           </dl>
 
-          {user?.id !== listing.owner_id && (
+          {user.id !== listing.owner_id && (
             <div className="pt-2 sm:pt-0">
-              <ContactFormDialog 
+              <ContactFormDialog
                 listingId={listing.id}
-                defaultEmail={user?.email ?? ""}
+                defaultEmail={user.email ?? ""}
                 defaultName={currentUserProfile?.full_name ?? ""}
               />
             </div>

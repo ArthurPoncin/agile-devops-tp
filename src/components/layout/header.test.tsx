@@ -46,4 +46,27 @@ describe("<Header>", () => {
     expect(screen.getByRole("button", { name: /se déconnecter/i })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /se connecter/i })).not.toBeInTheDocument();
   });
+
+  it("shows a link to /messages when signed in", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "u1", email: "alice@example.com" } },
+    });
+    const { Header } = await import("./header");
+
+    render(await Header());
+
+    const messagesLink = screen.getByRole("link", { name: /^messages$/i });
+    expect(messagesLink).toHaveAttribute("href", "/messages");
+  });
+
+  it("hides the /messages link when no user is signed in", async () => {
+    getUser.mockResolvedValue({ data: { user: null } });
+    const { Header } = await import("./header");
+
+    render(await Header());
+
+    expect(
+      screen.queryByRole("link", { name: /^messages$/i }),
+    ).not.toBeInTheDocument();
+  });
 });
